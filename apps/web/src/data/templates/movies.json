@@ -1,0 +1,13 @@
+{
+  "name": "Movies",
+  "description": "Film database with ratings and genres",
+  "fields": [
+    { "name": "id", "typeId": "autoIncrement", "options": {}, "unique": true },
+    { "name": "title", "typeId": "sentence", "options": { "words": 3 }, "unique": false },
+    { "name": "director", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "genre", "typeId": "enum", "options": { "values": "action,comedy,drama,sci-fi,horror,thriller,romance" }, "unique": false },
+    { "name": "rating", "typeId": "float", "options": { "min": 1, "max": 10 }, "unique": false },
+    { "name": "releaseYear", "typeId": "integer", "options": { "min": 1980, "max": 2025 }, "unique": false },
+    { "name": "durationMin", "typeId": "integer", "options": { "min": 80, "max": 200 }, "unique": false }
+  ]
+}

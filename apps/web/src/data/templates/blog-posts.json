@@ -1,0 +1,12 @@
+{
+  "name": "Blog Posts",
+  "description": "CMS blog entries with author and tags",
+  "fields": [
+    { "name": "id", "typeId": "autoIncrement", "options": {}, "unique": true },
+    { "name": "title", "typeId": "sentence", "options": { "words": 6 }, "unique": false },
+    { "name": "slug", "typeId": "slug", "options": {}, "unique": true },
+    { "name": "authorName", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "publishedAt", "typeId": "pastDate", "options": {}, "unique": false },
+    { "name": "tags", "typeId": "enum", "options": { "values": "tech,design,business,lifestyle" }, "unique": false }
+  ]
+}

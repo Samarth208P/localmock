@@ -1,0 +1,13 @@
+{
+  "name": "Medical Records",
+  "description": "Patient health records (synthetic data)",
+  "fields": [
+    { "name": "recordId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "patientName", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "dateOfBirth", "typeId": "pastDate", "options": {}, "unique": false },
+    { "name": "bloodType", "typeId": "enum", "options": { "values": "A+,A-,B+,B-,AB+,AB-,O+,O-" }, "unique": false },
+    { "name": "diagnosis", "typeId": "sentence", "options": { "words": 3 }, "unique": false },
+    { "name": "department", "typeId": "enum", "options": { "values": "cardiology,neurology,orthopedics,oncology,pediatrics" }, "unique": false },
+    { "name": "visitDate", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

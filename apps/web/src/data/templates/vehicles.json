@@ -1,0 +1,13 @@
+{
+  "name": "Vehicles",
+  "description": "Vehicle fleet inventory data",
+  "fields": [
+    { "name": "vin", "typeId": "alphanumeric", "options": { "length": 17 }, "unique": true },
+    { "name": "make", "typeId": "enum", "options": { "values": "Toyota,Ford,BMW,Tesla,Honda,Mercedes" }, "unique": false },
+    { "name": "model", "typeId": "word", "options": {}, "unique": false },
+    { "name": "year", "typeId": "integer", "options": { "min": 2010, "max": 2025 }, "unique": false },
+    { "name": "color", "typeId": "colorName", "options": {}, "unique": false },
+    { "name": "mileage", "typeId": "integer", "options": { "min": 0, "max": 200000 }, "unique": false },
+    { "name": "price", "typeId": "price", "options": { "min": 5000, "max": 100000 }, "unique": false }
+  ]
+}

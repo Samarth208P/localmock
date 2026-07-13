@@ -1,0 +1,13 @@
+{
+  "name": "Restaurants",
+  "description": "Restaurant directory with ratings",
+  "fields": [
+    { "name": "id", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "name", "typeId": "companyName", "options": {}, "unique": false },
+    { "name": "cuisine", "typeId": "enum", "options": { "values": "Italian,Japanese,Mexican,Indian,French,Thai,American" }, "unique": false },
+    { "name": "rating", "typeId": "float", "options": { "min": 1, "max": 5 }, "unique": false },
+    { "name": "priceRange", "typeId": "enum", "options": { "values": "$,$$,$$$,$$$$" }, "unique": false },
+    { "name": "city", "typeId": "city", "options": {}, "unique": false },
+    { "name": "phone", "typeId": "phone", "options": {}, "unique": false }
+  ]
+}

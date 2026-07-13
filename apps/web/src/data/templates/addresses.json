@@ -1,0 +1,12 @@
+{
+  "name": "Addresses",
+  "description": "Mailing and shipping addresses",
+  "fields": [
+    { "name": "id", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "street", "typeId": "streetAddress", "options": {}, "unique": false },
+    { "name": "city", "typeId": "city", "options": {}, "unique": false },
+    { "name": "state", "typeId": "state", "options": {}, "unique": false },
+    { "name": "zipCode", "typeId": "zipCode", "options": {}, "unique": false },
+    { "name": "country", "typeId": "country", "options": {}, "unique": false }
+  ]
+}

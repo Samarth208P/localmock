@@ -1,0 +1,13 @@
+{
+  "name": "Flight Bookings",
+  "description": "Airline reservation system data",
+  "fields": [
+    { "name": "bookingRef", "typeId": "alphanumeric", "options": { "length": 6 }, "unique": true },
+    { "name": "passengerName", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "origin", "typeId": "enum", "options": { "values": "JFK,LAX,LHR,CDG,NRT,SIN,DXB,SFO" }, "unique": false },
+    { "name": "destination", "typeId": "enum", "options": { "values": "JFK,LAX,LHR,CDG,NRT,SIN,DXB,SFO" }, "unique": false },
+    { "name": "class", "typeId": "enum", "options": { "values": "economy,business,first" }, "unique": false },
+    { "name": "price", "typeId": "price", "options": { "min": 200, "max": 5000 }, "unique": false },
+    { "name": "departureDate", "typeId": "futureDate", "options": {}, "unique": false }
+  ]
+}

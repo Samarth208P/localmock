@@ -1,0 +1,12 @@
+{
+  "name": "Orders",
+  "description": "Customer order records with status tracking",
+  "fields": [
+    { "name": "orderId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "customerId", "typeId": "uuid", "options": {}, "unique": false },
+    { "name": "total", "typeId": "price", "options": { "min": 10, "max": 2000 }, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "pending,shipped,delivered,cancelled" }, "unique": false },
+    { "name": "shippingAddress", "typeId": "streetAddress", "options": {}, "unique": false },
+    { "name": "createdAt", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

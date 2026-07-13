@@ -39,6 +39,10 @@ export function useWorker(): UseWorkerReturn {
         case 'progress':
           setProgress(Math.round((data.generated / data.total) * 100));
           break;
+        case 'partial':
+          // Incremental preview: show first rows immediately while generation continues
+          setRows(data.rows);
+          break;
         case 'result':
           setRows(data.rows);
           setIsGenerating(false);

@@ -1,0 +1,20 @@
+{
+  "name": "LocalMock",
+  "short_name": "LocalMock",
+  "description": "Generate unlimited mock data instantly in your browser. No signup, no limits, no server.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/localmock.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer tools", "utilities"],
+  "lang": "en"
+}

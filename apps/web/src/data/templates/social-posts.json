@@ -1,0 +1,13 @@
+{
+  "name": "Social Posts",
+  "description": "Social media posts with engagement metrics",
+  "fields": [
+    { "name": "postId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "authorUsername", "typeId": "username", "options": {}, "unique": false },
+    { "name": "content", "typeId": "paragraph", "options": {}, "unique": false },
+    { "name": "likes", "typeId": "integer", "options": { "min": 0, "max": 10000 }, "unique": false },
+    { "name": "shares", "typeId": "integer", "options": { "min": 0, "max": 2000 }, "unique": false },
+    { "name": "platform", "typeId": "enum", "options": { "values": "twitter,instagram,facebook,linkedin" }, "unique": false },
+    { "name": "postedAt", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

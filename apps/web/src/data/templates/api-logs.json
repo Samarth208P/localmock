@@ -1,0 +1,13 @@
+{
+  "name": "API Logs",
+  "description": "HTTP request logs with response codes",
+  "fields": [
+    { "name": "requestId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "method", "typeId": "enum", "options": { "values": "GET,POST,PUT,PATCH,DELETE" }, "unique": false },
+    { "name": "path", "typeId": "slug", "options": {}, "unique": false },
+    { "name": "statusCode", "typeId": "enum", "options": { "values": "200,201,301,400,401,403,404,500" }, "unique": false },
+    { "name": "responseTimeMs", "typeId": "integer", "options": { "min": 5, "max": 3000 }, "unique": false },
+    { "name": "userAgent", "typeId": "userAgent", "options": {}, "unique": false },
+    { "name": "timestamp", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

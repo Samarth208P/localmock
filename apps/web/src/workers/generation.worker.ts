@@ -32,6 +32,11 @@ export interface GenerateResult {
   rows: Record<string, unknown>[];
 }
 
+export interface GeneratePartial {
+  type: 'partial';
+  rows: Record<string, unknown>[];
+}
+
 export interface GenerateProgress {
   type: 'progress';
   generated: number;
@@ -43,12 +48,13 @@ export interface GenerateError {
   message: string;
 }
 
-export type WorkerOutMessage = GenerateResult | GenerateProgress | GenerateError;
+export type WorkerOutMessage = GenerateResult | GeneratePartial | GenerateProgress | GenerateError;
 
 // --- Constants ---
 
 const COLLISION_LIMIT = 50;
 const CHUNK_SIZE = 1000;
+const PARTIAL_PREVIEW_SIZE = 10;
 
 // --- Worker handler ---
 
@@ -119,6 +125,12 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
       }
 
       rows.push(row);
+
+      // Send first 10 rows immediately for incremental preview
+      if (i + 1 === PARTIAL_PREVIEW_SIZE && rowCount > PARTIAL_PREVIEW_SIZE) {
+        const partial: GeneratePartial = { type: 'partial', rows: rows.slice(0, PARTIAL_PREVIEW_SIZE) };
+        self.postMessage(partial);
+      }
 
       // Progress reporting
       if ((i + 1) % CHUNK_SIZE === 0) {

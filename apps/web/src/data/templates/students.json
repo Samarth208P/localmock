@@ -1,0 +1,12 @@
+{
+  "name": "Students",
+  "description": "Student enrollment records",
+  "fields": [
+    { "name": "studentId", "typeId": "autoIncrement", "options": {}, "unique": true },
+    { "name": "name", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "email", "typeId": "email", "options": { "domain": "@university.edu" }, "unique": true },
+    { "name": "major", "typeId": "enum", "options": { "values": "Computer Science,Mathematics,Physics,Biology,Economics,Engineering" }, "unique": false },
+    { "name": "gpa", "typeId": "float", "options": { "min": 2.0, "max": 4.0 }, "unique": false },
+    { "name": "enrollmentYear", "typeId": "integer", "options": { "min": 2020, "max": 2025 }, "unique": false }
+  ]
+}

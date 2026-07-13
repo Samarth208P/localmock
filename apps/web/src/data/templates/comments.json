@@ -1,0 +1,12 @@
+{
+  "name": "Comments",
+  "description": "User comments and reviews",
+  "fields": [
+    { "name": "commentId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "postId", "typeId": "uuid", "options": {}, "unique": false },
+    { "name": "author", "typeId": "username", "options": {}, "unique": false },
+    { "name": "body", "typeId": "paragraph", "options": {}, "unique": false },
+    { "name": "likes", "typeId": "integer", "options": { "min": 0, "max": 500 }, "unique": false },
+    { "name": "createdAt", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

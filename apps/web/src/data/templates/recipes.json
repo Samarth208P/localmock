@@ -1,0 +1,13 @@
+{
+  "name": "Recipes",
+  "description": "Cooking recipe database",
+  "fields": [
+    { "name": "recipeId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "title", "typeId": "sentence", "options": { "words": 4 }, "unique": false },
+    { "name": "cuisine", "typeId": "enum", "options": { "values": "Italian,Mexican,Japanese,Indian,French,Thai,American,Mediterranean" }, "unique": false },
+    { "name": "prepTimeMin", "typeId": "integer", "options": { "min": 5, "max": 120 }, "unique": false },
+    { "name": "servings", "typeId": "integer", "options": { "min": 1, "max": 12 }, "unique": false },
+    { "name": "difficulty", "typeId": "enum", "options": { "values": "easy,medium,hard" }, "unique": false },
+    { "name": "calories", "typeId": "integer", "options": { "min": 100, "max": 1500 }, "unique": false }
+  ]
+}

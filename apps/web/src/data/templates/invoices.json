@@ -1,0 +1,13 @@
+{
+  "name": "Invoices",
+  "description": "Business invoices with line items",
+  "fields": [
+    { "name": "invoiceNo", "typeId": "alphanumeric", "options": { "length": 10 }, "unique": true },
+    { "name": "clientName", "typeId": "companyName", "options": {}, "unique": false },
+    { "name": "amount", "typeId": "price", "options": { "min": 100, "max": 25000 }, "unique": false },
+    { "name": "tax", "typeId": "float", "options": { "min": 0, "max": 20 }, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "draft,sent,paid,overdue" }, "unique": false },
+    { "name": "dueDate", "typeId": "futureDate", "options": {}, "unique": false },
+    { "name": "issuedAt", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

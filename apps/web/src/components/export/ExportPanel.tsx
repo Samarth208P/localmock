@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { SQL_DIALECTS } from '@/lib/constants';
 import { serializeCSV, serializeJSON, serializeJSONL, serializeSQL, serializeMSW, serializeTSArray } from '@localmock/core/exports';
 import { supportsFileSystemAccess } from '@/lib/browserDetect';
+import { showToast } from '@/components/shared/Toast';
+import { useStreamingExport } from '@/hooks/useStreamingExport';
+import { StreamingProgress } from './StreamingProgress';
 import { IconFile, IconBraces, IconNewline, IconDatabase, IconPlug, IconPackage } from '@/components/shared/Icons';
+import type { FieldDef } from '@/workers/generation.worker';
 
 interface ExportPanelProps {
   rows: Record<string, unknown>[];
   tableName: string;
+  fieldDefs?: FieldDef[];
+  totalRowCount?: number;
 }
 
 const FORMATS = [
@@ -18,11 +24,15 @@ const FORMATS = [
   { id: 'ts', label: 'TS Array', Icon: IconPackage, desc: 'TypeScript constant' },
 ] as const;
 
-export function ExportPanel({ rows, tableName }: ExportPanelProps) {
+export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: ExportPanelProps) {
   const [sqlDialect, setSqlDialect] = useState<string>('postgres');
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null);
   const hasFSAA = supportsFileSystemAccess();
+  const { startStreaming, isStreaming, progress: streamProgress, error: streamError, isAvailable: streamAvailable } = useStreamingExport();
+
+  const rowCount = totalRowCount || rows.length;
+  const canStream = streamAvailable && rowCount > 50000 && fieldDefs && fieldDefs.length > 0;
 
   const doDownload = async (formatId: string) => {
     if (rows.length === 0) return;
@@ -107,6 +117,17 @@ export function ExportPanel({ rows, tableName }: ExportPanelProps) {
     setExpandedFormat(null);
   };
 
+  const doCopy = async () => {
+    if (rows.length === 0) return;
+    try {
+      const content = serializeJSON(rows);
+      await navigator.clipboard.writeText(content);
+      showToast('Copied to clipboard');
+    } catch {
+      showToast('Failed to copy', 'error');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -115,6 +136,55 @@ export function ExportPanel({ rows, tableName }: ExportPanelProps) {
           {rows.length.toLocaleString()} rows ready
         </p>
       </div>
+
+      {/* Copy to clipboard (small datasets) */}
+      {rows.length > 0 && rows.length <= 100 && (
+        <button
+          onClick={doCopy}
+          className="w-full flex items-center justify-center gap-2 rounded-lg border border-border-subtle bg-bg-secondary py-2.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:border-accent/40 hover:bg-accent/[0.03] transition-all duration-200 active:scale-[0.98]"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          Copy JSON to Clipboard
+        </button>
+      )}
+
+      {/* Streaming export for large datasets */}
+      {canStream && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-text-secondary">Stream to File</span>
+            <span className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">1M+ rows</span>
+          </div>
+
+          {isStreaming && streamProgress ? (
+            <StreamingProgress
+              generated={streamProgress.generated}
+              total={streamProgress.total}
+              eta={streamProgress.eta}
+              percent={streamProgress.percent}
+            />
+          ) : (
+            <div className="flex gap-1.5">
+              {(['csv', 'json', 'jsonl', 'sql'] as const).map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => startStreaming(fieldDefs!, rowCount, fmt, tableName, sqlDialect as any)}
+                  disabled={isStreaming}
+                  className="flex-1 rounded-lg border border-border-subtle bg-bg-secondary py-2 text-[11px] font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all disabled:opacity-50"
+                >
+                  .{fmt}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {streamError && (
+            <p className="text-[11px] text-error">{streamError}</p>
+          )}
+        </div>
+      )}
 
       {/* Format cards */}
       <div className="space-y-2">

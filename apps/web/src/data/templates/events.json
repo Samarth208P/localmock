@@ -1,0 +1,13 @@
+{
+  "name": "Events",
+  "description": "Event management with venues and capacity",
+  "fields": [
+    { "name": "eventId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "title", "typeId": "sentence", "options": { "words": 4 }, "unique": false },
+    { "name": "venue", "typeId": "companyName", "options": {}, "unique": false },
+    { "name": "capacity", "typeId": "integer", "options": { "min": 50, "max": 5000 }, "unique": false },
+    { "name": "ticketPrice", "typeId": "price", "options": { "min": 10, "max": 500 }, "unique": false },
+    { "name": "category", "typeId": "enum", "options": { "values": "conference,concert,workshop,meetup,webinar" }, "unique": false },
+    { "name": "date", "typeId": "futureDate", "options": {}, "unique": false }
+  ]
+}

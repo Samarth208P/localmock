@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { StepIndicator } from '@/components/layout/StepIndicator';
@@ -6,10 +6,14 @@ import { SchemaEditor } from '@/components/editor/SchemaEditor';
 import { ColumnList } from '@/components/builder/ColumnList';
 import { PreviewTable } from '@/components/preview/PreviewTable';
 import { ExportPanel } from '@/components/export/ExportPanel';
+import { ToastContainer } from '@/components/shared/Toast';
 import { useSchemaStore } from '@/store/schemaStore';
 import { useChaosStore } from '@/store/chaosStore';
 import { useAppStore } from '@/store/appStore';
+import { useMultiTableStore } from '@/store/multiTableStore';
 import { useWorker } from '@/hooks/useWorker';
+import { saveToHistory } from '@/lib/schemaHistory';
+import { decodeSchemaFromUrl, encodeSchemaToUrl } from '@/lib/shareableUrl';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
 
@@ -17,12 +21,24 @@ function App() {
   const { parsedSchema, parseError } = useSchemaStore();
   const chaosStore = useChaosStore();
   const { step, setStep, goBack } = useAppStore();
+  const multiTable = useMultiTableStore();
   const { generate, rows, isGenerating, progress, error } = useWorker();
   const [rowCount, setRowCount] = useState(1000);
   const fieldsRef = useRef<FieldRow[]>([]);
+  const lastFieldDefsRef = useRef<FieldDef[]>([]);
+  const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
 
-  const hasSchema = parsedSchema && parsedSchema.tables.length > 0;
-  const tableName = parsedSchema?.tables[0]?.name || 'data';
+  // Hydrate schema from URL on initial load
+  useEffect(() => {
+    const fields = decodeSchemaFromUrl();
+    if (fields && fields.length > 0) {
+      setUrlFields(fields);
+      fieldsRef.current = fields;
+    }
+  }, []);
+
+  const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0;
+  const tableName = parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
     fieldsRef.current = fields;
@@ -41,6 +57,20 @@ function App() {
           options: f.options,
           unique: f.unique,
         }));
+    } else if (multiTable.tables.length > 0) {
+      // Multi-table mode: use active table or first table with fields
+      const table = multiTable.tables.find((t) => t.id === multiTable.activeTableId)
+        || multiTable.tables[0];
+      if (table && table.fields.length > 0) {
+        fieldDefs = table.fields
+          .filter((f) => f.name.trim())
+          .map((f) => ({
+            name: f.name,
+            typeId: f.typeId,
+            options: f.options,
+            unique: f.unique,
+          }));
+      }
     } else if (parsedSchema && parsedSchema.tables.length > 0) {
       // Fallback: use parsed schema columns (from paste mode)
       const table = parsedSchema.tables[0];
@@ -54,6 +84,20 @@ function App() {
 
     if (fieldDefs.length === 0) return;
 
+    // Save to IndexedDB history
+    const historyFields: FieldRow[] = fieldDefs.map((f, i) => ({
+      id: `hist-${i}`,
+      name: f.name,
+      typeId: f.typeId,
+      options: f.options,
+      unique: f.unique,
+    }));
+    saveToHistory(historyFields, tableName);
+
+    // Encode schema into shareable URL
+    encodeSchemaToUrl(historyFields);
+
+    lastFieldDefsRef.current = fieldDefs;
     generate(fieldDefs, rowCount);
     setStep('preview');
   }, [parsedSchema, generate, setStep, rowCount]);
@@ -66,6 +110,7 @@ function App() {
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <Navbar />
       <StepIndicator />
+      <ToastContainer />
 
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Step 1: Schema Input */}
@@ -80,7 +125,7 @@ function App() {
               </p>
 
               <div className="mt-8">
-                <SchemaEditor onFieldsChange={handleFieldsChange} />
+                <SchemaEditor onFieldsChange={handleFieldsChange} urlFields={urlFields} />
               </div>
 
               {parseError && (
@@ -207,7 +252,7 @@ function App() {
                 <span>Back</span>
               </button>
 
-              <ExportPanel rows={rows} tableName={tableName} />
+              <ExportPanel rows={rows} tableName={tableName} fieldDefs={lastFieldDefsRef.current} totalRowCount={rowCount} />
 
               <button
                 onClick={() => setStep('configure')}

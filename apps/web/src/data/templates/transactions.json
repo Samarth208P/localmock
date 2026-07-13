@@ -1,0 +1,13 @@
+{
+  "name": "Transactions",
+  "description": "Financial transactions with amounts and types",
+  "fields": [
+    { "name": "txId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "fromAccount", "typeId": "iban", "options": {}, "unique": false },
+    { "name": "toAccount", "typeId": "iban", "options": {}, "unique": false },
+    { "name": "amount", "typeId": "price", "options": { "min": 1, "max": 50000 }, "unique": false },
+    { "name": "currency", "typeId": "enum", "options": { "values": "USD,EUR,GBP,JPY" }, "unique": false },
+    { "name": "type", "typeId": "enum", "options": { "values": "transfer,deposit,withdrawal,payment" }, "unique": false },
+    { "name": "timestamp", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

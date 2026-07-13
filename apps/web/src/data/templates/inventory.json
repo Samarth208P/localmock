@@ -1,0 +1,12 @@
+{
+  "name": "Inventory",
+  "description": "Warehouse inventory with stock levels",
+  "fields": [
+    { "name": "sku", "typeId": "alphanumeric", "options": { "length": 10 }, "unique": true },
+    { "name": "productName", "typeId": "productName", "options": {}, "unique": false },
+    { "name": "quantity", "typeId": "integer", "options": { "min": 0, "max": 10000 }, "unique": false },
+    { "name": "warehouse", "typeId": "enum", "options": { "values": "US-East,US-West,EU-Central,APAC" }, "unique": false },
+    { "name": "reorderLevel", "typeId": "integer", "options": { "min": 10, "max": 500 }, "unique": false },
+    { "name": "lastRestocked", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

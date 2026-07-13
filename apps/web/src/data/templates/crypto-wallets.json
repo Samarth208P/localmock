@@ -1,0 +1,11 @@
+{
+  "name": "Crypto Wallets",
+  "description": "Blockchain wallet addresses and balances",
+  "fields": [
+    { "name": "address", "typeId": "hexadecimal", "options": { "length": 40 }, "unique": true },
+    { "name": "balance", "typeId": "float", "options": { "min": 0, "max": 100 }, "unique": false },
+    { "name": "chain", "typeId": "enum", "options": { "values": "ethereum,bitcoin,solana,polygon,avalanche" }, "unique": false },
+    { "name": "label", "typeId": "username", "options": {}, "unique": false },
+    { "name": "lastActivity", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

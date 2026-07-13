@@ -1,0 +1,12 @@
+{
+  "name": "Chat Messages",
+  "description": "Real-time messaging app data",
+  "fields": [
+    { "name": "messageId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "channelId", "typeId": "uuid", "options": {}, "unique": false },
+    { "name": "sender", "typeId": "username", "options": {}, "unique": false },
+    { "name": "content", "typeId": "sentence", "options": { "words": 12 }, "unique": false },
+    { "name": "type", "typeId": "enum", "options": { "values": "text,image,file,system" }, "unique": false },
+    { "name": "sentAt", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

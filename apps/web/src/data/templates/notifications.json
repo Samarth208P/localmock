@@ -1,0 +1,13 @@
+{
+  "name": "Notifications",
+  "description": "In-app notification system data",
+  "fields": [
+    { "name": "id", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "userId", "typeId": "uuid", "options": {}, "unique": false },
+    { "name": "title", "typeId": "sentence", "options": { "words": 4 }, "unique": false },
+    { "name": "body", "typeId": "sentence", "options": { "words": 10 }, "unique": false },
+    { "name": "type", "typeId": "enum", "options": { "values": "info,warning,success,error" }, "unique": false },
+    { "name": "isRead", "typeId": "boolean", "options": {}, "unique": false },
+    { "name": "createdAt", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

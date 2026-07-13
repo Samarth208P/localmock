@@ -1,0 +1,13 @@
+{
+  "name": "Server Metrics",
+  "description": "Infrastructure monitoring time-series data",
+  "fields": [
+    { "name": "metricId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "hostname", "typeId": "domainName", "options": {}, "unique": false },
+    { "name": "cpuPercent", "typeId": "float", "options": { "min": 0, "max": 100 }, "unique": false },
+    { "name": "memoryMB", "typeId": "integer", "options": { "min": 512, "max": 65536 }, "unique": false },
+    { "name": "diskIOps", "typeId": "integer", "options": { "min": 0, "max": 50000 }, "unique": false },
+    { "name": "region", "typeId": "enum", "options": { "values": "us-east-1,us-west-2,eu-west-1,ap-southeast-1" }, "unique": false },
+    { "name": "timestamp", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

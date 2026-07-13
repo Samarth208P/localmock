@@ -8,17 +8,14 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "turbo dev",
-    "start": "turbo dev",
+    "dev": "turbo dev --filter=@localmock/web",
+    "start": "turbo dev --filter=@localmock/web",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "clean": "turbo clean",
-    "dev:web": "turbo dev --filter=@localmock/web",
-    "dev:marketing": "turbo dev --filter=@localmock/marketing",
-    "build:web": "turbo build --filter=@localmock/web",
-    "build:marketing": "turbo build --filter=@localmock/marketing"
+    "build:web": "turbo build --filter=@localmock/web"
   },
   "devDependencies": {
     "turbo": "^2.4.0",

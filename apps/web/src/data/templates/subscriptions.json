@@ -1,0 +1,13 @@
+{
+  "name": "Subscriptions",
+  "description": "SaaS subscription management",
+  "fields": [
+    { "name": "subscriptionId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "customerId", "typeId": "uuid", "options": {}, "unique": false },
+    { "name": "plan", "typeId": "enum", "options": { "values": "free,starter,pro,enterprise" }, "unique": false },
+    { "name": "mrr", "typeId": "price", "options": { "min": 0, "max": 999 }, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "active,trialing,past_due,cancelled" }, "unique": false },
+    { "name": "startedAt", "typeId": "pastDate", "options": {}, "unique": false },
+    { "name": "renewsAt", "typeId": "futureDate", "options": {}, "unique": false }
+  ]
+}

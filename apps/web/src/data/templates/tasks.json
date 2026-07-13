@@ -1,0 +1,13 @@
+{
+  "name": "Tasks",
+  "description": "Project management task board",
+  "fields": [
+    { "name": "taskId", "typeId": "autoIncrement", "options": {}, "unique": true },
+    { "name": "title", "typeId": "sentence", "options": { "words": 5 }, "unique": false },
+    { "name": "assignee", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "backlog,todo,in_progress,review,done" }, "unique": false },
+    { "name": "priority", "typeId": "enum", "options": { "values": "P0,P1,P2,P3" }, "unique": false },
+    { "name": "storyPoints", "typeId": "integer", "options": { "min": 1, "max": 13 }, "unique": false },
+    { "name": "dueDate", "typeId": "futureDate", "options": {}, "unique": false }
+  ]
+}

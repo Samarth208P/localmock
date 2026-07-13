@@ -1,0 +1,12 @@
+{
+  "name": "Users",
+  "description": "Standard user accounts with profile info",
+  "fields": [
+    { "name": "id", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "email", "typeId": "email", "options": {}, "unique": true },
+    { "name": "name", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "avatar", "typeId": "avatar", "options": { "provider": "dicebear" }, "unique": false },
+    { "name": "role", "typeId": "enum", "options": { "values": "admin,member,viewer" }, "unique": false },
+    { "name": "createdAt", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}

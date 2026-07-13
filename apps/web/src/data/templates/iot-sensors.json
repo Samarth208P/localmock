@@ -1,0 +1,13 @@
+{
+  "name": "IoT Sensors",
+  "description": "IoT sensor readings with device metadata",
+  "fields": [
+    { "name": "readingId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "deviceId", "typeId": "alphanumeric", "options": { "length": 12 }, "unique": false },
+    { "name": "temperature", "typeId": "float", "options": { "min": -20, "max": 80 }, "unique": false },
+    { "name": "humidity", "typeId": "float", "options": { "min": 0, "max": 100 }, "unique": false },
+    { "name": "batteryLevel", "typeId": "integer", "options": { "min": 0, "max": 100 }, "unique": false },
+    { "name": "location", "typeId": "latLng", "options": {}, "unique": false },
+    { "name": "timestamp", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

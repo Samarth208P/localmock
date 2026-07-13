@@ -1,0 +1,12 @@
+{
+  "name": "Products",
+  "description": "E-commerce product catalog",
+  "fields": [
+    { "name": "id", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "name", "typeId": "productName", "options": {}, "unique": false },
+    { "name": "price", "typeId": "price", "options": { "min": 5, "max": 500 }, "unique": false },
+    { "name": "category", "typeId": "enum", "options": { "values": "Electronics,Clothing,Books,Home,Sports" }, "unique": false },
+    { "name": "sku", "typeId": "alphanumeric", "options": { "length": 8 }, "unique": true },
+    { "name": "inStock", "typeId": "boolean", "options": {}, "unique": false }
+  ]
+}

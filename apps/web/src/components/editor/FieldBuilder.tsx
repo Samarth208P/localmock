@@ -13,11 +13,12 @@ export interface FieldRow {
 
 interface FieldBuilderProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
+  initialFields?: FieldRow[];
 }
 
-export function FieldBuilder({ onFieldsChange }: FieldBuilderProps) {
+export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProps) {
   const { setParsedSchema } = useSchemaStore();
-  const [fields, setFields] = useState<FieldRow[]>([
+  const [fields, setFields] = useState<FieldRow[]>(initialFields && initialFields.length > 0 ? initialFields : [
     { id: crypto.randomUUID(), name: 'id', typeId: 'uuid', options: {}, unique: true },
     { id: crypto.randomUUID(), name: 'name', typeId: 'fullName', options: {}, unique: false },
     { id: crypto.randomUUID(), name: 'email', typeId: 'email', options: {}, unique: true },

@@ -1,0 +1,13 @@
+{
+  "name": "Payments",
+  "description": "Payment processor records",
+  "fields": [
+    { "name": "paymentId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "amount", "typeId": "price", "options": { "min": 1, "max": 5000 }, "unique": false },
+    { "name": "currency", "typeId": "enum", "options": { "values": "USD,EUR,GBP,CAD,AUD" }, "unique": false },
+    { "name": "method", "typeId": "enum", "options": { "values": "card,bank_transfer,paypal,crypto" }, "unique": false },
+    { "name": "cardLast4", "typeId": "integer", "options": { "min": 1000, "max": 9999 }, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "succeeded,pending,failed,refunded" }, "unique": false },
+    { "name": "processedAt", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

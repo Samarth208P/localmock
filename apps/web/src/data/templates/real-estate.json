@@ -1,0 +1,14 @@
+{
+  "name": "Real Estate Listings",
+  "description": "Property listings with pricing and details",
+  "fields": [
+    { "name": "listingId", "typeId": "uuid", "options": {}, "unique": true },
+    { "name": "address", "typeId": "streetAddress", "options": {}, "unique": false },
+    { "name": "city", "typeId": "city", "options": {}, "unique": false },
+    { "name": "price", "typeId": "integer", "options": { "min": 100000, "max": 2000000 }, "unique": false },
+    { "name": "bedrooms", "typeId": "integer", "options": { "min": 1, "max": 6 }, "unique": false },
+    { "name": "sqft", "typeId": "integer", "options": { "min": 500, "max": 5000 }, "unique": false },
+    { "name": "type", "typeId": "enum", "options": { "values": "house,apartment,condo,townhouse" }, "unique": false },
+    { "name": "listedAt", "typeId": "recentDate", "options": {}, "unique": false }
+  ]
+}

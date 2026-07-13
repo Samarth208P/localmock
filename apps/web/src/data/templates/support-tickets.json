@@ -1,0 +1,13 @@
+{
+  "name": "Support Tickets",
+  "description": "Customer support tickets with priority levels",
+  "fields": [
+    { "name": "ticketId", "typeId": "autoIncrement", "options": {}, "unique": true },
+    { "name": "subject", "typeId": "sentence", "options": { "words": 5 }, "unique": false },
+    { "name": "customerEmail", "typeId": "email", "options": {}, "unique": false },
+    { "name": "priority", "typeId": "enum", "options": { "values": "low,medium,high,critical" }, "unique": false },
+    { "name": "status", "typeId": "enum", "options": { "values": "open,in_progress,resolved,closed" }, "unique": false },
+    { "name": "assignee", "typeId": "fullName", "options": {}, "unique": false },
+    { "name": "createdAt", "typeId": "pastDate", "options": {}, "unique": false }
+  ]
+}
