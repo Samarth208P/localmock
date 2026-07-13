@@ -12,12 +12,12 @@ export function Footer() {
           GitHub
         </a>
         <a
-          href="https://buymeacoffee.com/localmock"
+          href="https://buymeacoffee.com/samarth208p"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-text-secondary transition-colors"
         >
-          ☕ Support
+          Support
         </a>
       </div>
     </footer>

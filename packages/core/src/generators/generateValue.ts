@@ -1,14 +1,13 @@
-import { customGenerators } from './custom';
+import { customGenerators, type RowContext } from './custom';
 import type { FieldClassification } from '../parser/types';
 
 /**
  * Generates a single value for a field based on its classification.
- * Uses custom lightweight generators for common types.
- * Falls back to Faker (loaded separately in Worker) for complex types.
+ * Uses RowContext to produce correlated data (email matches name, etc).
  */
 export function generateValue(
   field: FieldClassification,
-  _idPools?: Record<string, string[]>,
+  ctx: RowContext,
   enumValues?: string[],
 ): unknown {
   const { fakerMethod, inferredType } = field;
@@ -18,59 +17,57 @@ export function generateValue(
     return enumValues[Math.floor(Math.random() * enumValues.length)];
   }
 
-  // Map faker methods to custom generators
+  // Map faker methods to context-aware generators
   switch (fakerMethod) {
     case 'string.uuid':
       return customGenerators.uuid();
     case 'internet.email':
-      return customGenerators.email();
+      return customGenerators.email(ctx);
     case 'person.firstName':
-      return customGenerators.firstName();
+      return customGenerators.firstName(ctx);
     case 'person.lastName':
-      return customGenerators.lastName();
+      return customGenerators.lastName(ctx);
     case 'person.fullName':
-      return `${customGenerators.firstName()} ${customGenerators.lastName()}`;
+      return customGenerators.fullName(ctx);
     case 'phone.number':
       return customGenerators.phone();
     case 'internet.url':
+      return customGenerators.url(ctx);
     case 'image.avatar':
-      return customGenerators.url();
+      return customGenerators.avatar(ctx);
     case 'date.recent':
       return customGenerators.date();
     case 'location.streetAddress':
-      return `${customGenerators.integer(100, 9999)} ${customGenerators.lastName()} St`;
+      return customGenerators.streetAddress();
     case 'location.city':
-      return customGenerators.sentence().replace('.', '').split(' ')[0];
+      return customGenerators.city(ctx);
     case 'location.country':
-      const countries = ['US', 'UK', 'DE', 'FR', 'JP', 'IN', 'BR', 'CA', 'AU', 'KR'];
-      return countries[Math.floor(Math.random() * countries.length)];
+      return customGenerators.country(ctx);
     case 'location.zipCode':
-      return customGenerators.alphanumeric(5).toUpperCase();
+      return customGenerators.zipCode();
     case 'location.latitude':
-      return customGenerators.float(-90, 90, 6);
+      return customGenerators.latitude();
     case 'location.longitude':
-      return customGenerators.float(-180, 180, 6);
+      return customGenerators.longitude();
     case 'finance.ethereumAddress':
       return customGenerators.ethAddress();
     case 'string.hexadecimal':
       return customGenerators.hexHash();
     case 'finance.amount':
-      return customGenerators.float(1, 10000, 2);
+      return customGenerators.amount();
     case 'finance.currencyCode':
-      const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'BRL', 'AUD'];
-      return currencies[Math.floor(Math.random() * currencies.length)];
+      return customGenerators.currencyCode();
     case 'datatype.boolean':
       return customGenerators.boolean();
     case 'number.int':
       return customGenerators.integer(1, 10000);
     case 'company.name':
-      return customGenerators.company();
+      return customGenerators.company(ctx);
     case 'lorem.paragraph':
       return customGenerators.paragraph();
     case 'lorem.sentence':
       return customGenerators.sentence();
     case 'helpers.arrayElement':
-      // Generic enum without explicit values
       const defaults = ['active', 'inactive', 'pending', 'archived'];
       return defaults[Math.floor(Math.random() * defaults.length)];
     case 'string.alphanumeric':

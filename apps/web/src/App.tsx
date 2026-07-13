@@ -1,27 +1,234 @@
+import { useCallback, useState, useRef } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { StepIndicator } from '@/components/layout/StepIndicator';
+import { SchemaEditor } from '@/components/editor/SchemaEditor';
+import { ColumnList } from '@/components/builder/ColumnList';
+import { PreviewTable } from '@/components/preview/PreviewTable';
+import { ExportPanel } from '@/components/export/ExportPanel';
+import { useSchemaStore } from '@/store/schemaStore';
+import { useChaosStore } from '@/store/chaosStore';
+import { useAppStore } from '@/store/appStore';
+import { useWorker } from '@/hooks/useWorker';
+import type { FieldRow } from '@/components/editor/FieldBuilder';
+import type { FieldDef } from '@/workers/generation.worker';
 
 function App() {
+  const { parsedSchema, parseError } = useSchemaStore();
+  const chaosStore = useChaosStore();
+  const { step, setStep, goBack } = useAppStore();
+  const { generate, rows, isGenerating, progress, error } = useWorker();
+  const [rowCount, setRowCount] = useState(1000);
+  const fieldsRef = useRef<FieldRow[]>([]);
+
+  const hasSchema = parsedSchema && parsedSchema.tables.length > 0;
+  const tableName = parsedSchema?.tables[0]?.name || 'data';
+
+  const handleFieldsChange = useCallback((fields: FieldRow[]) => {
+    fieldsRef.current = fields;
+  }, []);
+
+  const handleGenerate = useCallback(() => {
+    // Try manual builder fields first
+    let fieldDefs: FieldDef[] = [];
+
+    if (fieldsRef.current.length > 0 && fieldsRef.current.some((f) => f.name.trim())) {
+      fieldDefs = fieldsRef.current
+        .filter((f) => f.name.trim())
+        .map((f) => ({
+          name: f.name,
+          typeId: f.typeId,
+          options: f.options,
+          unique: f.unique,
+        }));
+    } else if (parsedSchema && parsedSchema.tables.length > 0) {
+      // Fallback: use parsed schema columns (from paste mode)
+      const table = parsedSchema.tables[0];
+      fieldDefs = table.columns.map((col) => ({
+        name: col.name,
+        typeId: col.type,
+        options: {},
+        unique: col.isUnique,
+      }));
+    }
+
+    if (fieldDefs.length === 0) return;
+
+    generate(fieldDefs, rowCount);
+    setStep('preview');
+  }, [parsedSchema, generate, setStep, rowCount]);
+
+  const handleProceedToConfigure = useCallback(() => {
+    if (hasSchema) setStep('configure');
+  }, [hasSchema, setStep]);
+
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <Navbar />
-      <main className="flex flex-1">
-        {/* Left Panel: Schema Builder */}
-        <section className="w-[45%] border-r border-border-subtle p-6 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center h-full text-text-muted">
-            <p className="text-lg font-medium">Paste your schema here</p>
-            <p className="text-sm mt-2">TypeScript interface, Prisma schema, or raw JSON</p>
-          </div>
-        </section>
+      <StepIndicator />
 
-        {/* Right Panel: Preview Table */}
-        <section className="w-[55%] p-6 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center h-full text-text-muted">
-            <p className="text-lg font-medium">Preview</p>
-            <p className="text-sm mt-2">Generated data will appear here</p>
+      <main className="flex flex-1 flex-col overflow-hidden">
+        {/* Step 1: Schema Input */}
+        {step === 'input' && (
+          <div className="animate-in flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
+            <div className="w-full max-w-2xl">
+              <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
+                Define your data
+              </h1>
+              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+                Paste a schema from any language, or build fields manually with 80+ data types.
+              </p>
+
+              <div className="mt-8">
+                <SchemaEditor onFieldsChange={handleFieldsChange} />
+              </div>
+
+              {parseError && (
+                <div className="animate-scale-in mt-4 rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-sm text-error">
+                  {parseError}
+                </div>
+              )}
+
+              {hasSchema && (
+                <button
+                  onClick={handleProceedToConfigure}
+                  className="animate-slide-up mt-8 w-full rounded-xl bg-accent py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]"
+                >
+                  Next: Configure & Generate →
+                </button>
+              )}
+            </div>
           </div>
-        </section>
+        )}
+
+        {/* Step 2: Configure Row Count + Chaos + Generate */}
+        {step === 'configure' && (
+          <div className="animate-in flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
+            <div className="w-full max-w-2xl">
+              <button
+                onClick={goBack}
+                className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
+              >
+                <span className="text-base">←</span>
+                <span>Back to Schema</span>
+              </button>
+
+              <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
+                Configure & Generate
+              </h1>
+              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+                Review your columns, set row count and chaos level, then generate.
+              </p>
+
+              {/* Column summary from parsed schema (paste mode) */}
+              <div className="mt-8">
+                <ColumnList />
+              </div>
+
+              {/* Row count + Chaos side by side */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Row count */}
+                <div className="rounded-xl border border-border-subtle bg-bg-secondary p-5">
+                  <label className="text-sm font-medium text-text-primary">
+                    Number of rows
+                  </label>
+                  <input
+                    type="number"
+                    value={rowCount}
+                    onChange={(e) => setRowCount(Math.max(1, Math.min(1000000, parseInt(e.target.value) || 1)))}
+                    min={1}
+                    max={1000000}
+                    className="mt-3 w-full rounded-lg border border-border-subtle bg-bg-tertiary px-4 py-2.5 text-sm text-text-primary font-mono focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+                    placeholder="1000"
+                  />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {[100, 1000, 5000, 10000, 50000, 100000].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setRowCount(n)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                          rowCount === n
+                            ? 'bg-accent/15 text-accent ring-1 ring-accent/30'
+                            : 'bg-bg-tertiary text-text-muted hover:text-text-secondary'
+                        }`}
+                      >
+                        {n.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Chaos slider */}
+                <div className="rounded-xl border border-border-subtle bg-bg-secondary p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-text-primary">Chaos Engine</span>
+                    <span className="rounded-md bg-bg-tertiary px-2 py-0.5 text-xs font-mono text-text-muted">
+                      {chaosStore.globalRate}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    value={chaosStore.globalRate}
+                    onChange={(e) => chaosStore.setGlobalRate(parseInt(e.target.value))}
+                    className="mt-3 w-full accent-accent h-1.5 cursor-pointer"
+                    aria-label="Chaos corruption rate"
+                  />
+                  <p className="mt-2 text-xs text-text-muted leading-relaxed">
+                    Corrupts a percentage of values with nulls, broken encoding, trailing whitespace, and mixed casing.
+                  </p>
+                </div>
+              </div>
+
+              {/* Generate */}
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="mt-8 w-full rounded-xl bg-accent py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              >
+                {isGenerating
+                  ? 'Generating...'
+                  : `Generate ${rowCount.toLocaleString()} Rows →`}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Preview + Export */}
+        {step === 'preview' && (
+          <div className="animate-in flex flex-1 overflow-hidden">
+            <aside className="w-[300px] flex-shrink-0 border-r border-border-subtle overflow-y-auto p-5">
+              <button
+                onClick={goBack}
+                className="mb-5 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
+              >
+                <span className="text-base">←</span>
+                <span>Back</span>
+              </button>
+
+              <ExportPanel rows={rows} tableName={tableName} />
+
+              <button
+                onClick={() => setStep('configure')}
+                className="mt-5 w-full rounded-lg border border-border-subtle py-2.5 text-xs font-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all duration-200"
+              >
+                ← Edit & Regenerate
+              </button>
+            </aside>
+
+            <section className="flex flex-1 flex-col p-5">
+              <PreviewTable
+                rows={rows}
+                isGenerating={isGenerating}
+                progress={progress}
+                error={error}
+              />
+            </section>
+          </div>
+        )}
       </main>
+
       <Footer />
     </div>
   );

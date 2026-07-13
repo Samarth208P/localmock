@@ -2,7 +2,7 @@ import type { DetectedFormat } from './types';
 
 /**
  * Detects the input format by examining structural patterns.
- * Returns the most likely format for the parser pipeline.
+ * Supports: JSON, TypeScript, Prisma, Go, Python, Rust, SQL, and generic key-value.
  */
 export function detectFormat(input: string): DetectedFormat {
   const trimmed = input.trim();
@@ -25,6 +25,26 @@ export function detectFormat(input: string): DetectedFormat {
   // TypeScript: contains "interface" or "type" keyword
   if (/^\s*(export\s+)?(interface|type)\s+\w+/m.test(trimmed)) {
     return 'typescript';
+  }
+
+  // Go: contains "type X struct {"
+  if (/^\s*type\s+\w+\s+struct\s*\{/m.test(trimmed)) {
+    return 'go';
+  }
+
+  // Python: @dataclass or class with type hints
+  if (/^\s*@dataclass/m.test(trimmed) || /^\s*class\s+\w+.*:\s*$/m.test(trimmed)) {
+    return 'python';
+  }
+
+  // Rust: pub struct or struct with fields
+  if (/^\s*(pub\s+)?struct\s+\w+\s*\{/m.test(trimmed)) {
+    return 'rust';
+  }
+
+  // SQL CREATE TABLE
+  if (/^\s*CREATE\s+TABLE/im.test(trimmed)) {
+    return 'sql';
   }
 
   return 'unknown';

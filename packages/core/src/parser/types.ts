@@ -1,4 +1,4 @@
-export type DetectedFormat = 'json' | 'typescript' | 'prisma' | 'unknown';
+export type DetectedFormat = 'json' | 'typescript' | 'prisma' | 'go' | 'python' | 'rust' | 'sql' | 'unknown';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
 

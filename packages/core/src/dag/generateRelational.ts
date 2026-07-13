@@ -1,6 +1,8 @@
 import type { ParsedTable } from '../parser/types';
 import { topologicalSort } from './topologicalSort';
+import { createRowContext } from '../generators/custom';
 import type { DAGNode } from './types';
+import type { RowContext } from '../generators/custom';
 
 /**
  * Generates data for multiple related tables in dependency order.
@@ -9,7 +11,7 @@ import type { DAGNode } from './types';
 export function generateRelational(
   tables: ParsedTable[],
   rowCounts: Record<string, number>,
-  generateRow: (table: ParsedTable, idPools: Record<string, string[]>) => Record<string, unknown>,
+  generateRow: (table: ParsedTable, ctx: RowContext, idPools: Record<string, string[]>) => Record<string, unknown>,
 ): Record<string, Record<string, unknown>[]> {
   // Build DAG nodes from table relations
   const dagNodes: DAGNode[] = tables.map((table) => ({
@@ -35,7 +37,8 @@ export function generateRelational(
     const rows: Record<string, unknown>[] = [];
 
     for (let i = 0; i < rowCount; i++) {
-      const row = generateRow(table, idPools);
+      const ctx = createRowContext();
+      const row = generateRow(table, ctx, idPools);
       rows.push(row);
 
       // Extract ID for pool (first field that looks like an ID)

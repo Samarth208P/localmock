@@ -13,7 +13,7 @@ export interface ParsedColumn {
 
 export interface ParsedSchema {
   raw: string;
-  format: 'json' | 'typescript' | 'prisma' | 'unknown';
+  format: string;
   tables: ParsedTable[];
 }
 
