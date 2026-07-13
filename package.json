@@ -1,0 +1,27 @@
+{
+  "name": "localmock",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "start": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean",
+    "dev:web": "turbo dev --filter=@localmock/web",
+    "dev:marketing": "turbo dev --filter=@localmock/marketing",
+    "build:web": "turbo build --filter=@localmock/web",
+    "build:marketing": "turbo build --filter=@localmock/marketing"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  }
+}

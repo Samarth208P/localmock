@@ -1,0 +1,27 @@
+{
+  "name": "@localmock/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./parser": "./src/parser/index.ts",
+    "./dag": "./src/dag/index.ts",
+    "./generators": "./src/generators/index.ts",
+    "./chaos": "./src/chaos/index.ts",
+    "./exports": "./src/exports/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
