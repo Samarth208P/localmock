@@ -5,7 +5,7 @@
     { "name": "employeeId", "typeId": "autoIncrement", "options": {}, "unique": true },
     { "name": "firstName", "typeId": "firstName", "options": {}, "unique": false },
     { "name": "lastName", "typeId": "lastName", "options": {}, "unique": false },
-    { "name": "email", "typeId": "email", "options": { "domain": "@company.com" }, "unique": true },
+    { "name": "email", "typeId": "email", "options": {}, "unique": true },
     { "name": "department", "typeId": "enum", "options": { "values": "Engineering,Marketing,Sales,HR,Finance,Design" }, "unique": false },
     { "name": "jobTitle", "typeId": "jobTitle", "options": {}, "unique": false },
     { "name": "salary", "typeId": "integer", "options": { "min": 40000, "max": 200000 }, "unique": false },

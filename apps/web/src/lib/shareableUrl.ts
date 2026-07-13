@@ -1,4 +1,5 @@
 import type { FieldRow } from '@/components/editor/FieldBuilder';
+import LZString from 'lz-string';
 
 /**
  * Encode fields to a URL-safe base64 string and update the browser URL.
@@ -14,7 +15,7 @@ export function encodeSchemaToUrl(fields: FieldRow[]): void {
     }));
 
   const json = JSON.stringify(stripped);
-  const encoded = btoa(unescape(encodeURIComponent(json)));
+  const encoded = LZString.compressToEncodedURIComponent(json);
   window.history.replaceState(null, '', '?s=' + encoded);
 }
 
@@ -29,7 +30,14 @@ export function decodeSchemaFromUrl(): FieldRow[] | null {
   if (!encoded) return null;
 
   try {
-    const json = decodeURIComponent(escape(atob(encoded)));
+    // Try to decode with LZString first
+    let json = LZString.decompressFromEncodedURIComponent(encoded);
+    
+    // Fallback for older links using base64
+    if (!json) {
+      json = decodeURIComponent(escape(atob(encoded)));
+    }
+    
     const parsed = JSON.parse(json);
 
     if (!Array.isArray(parsed) || parsed.length === 0) return null;

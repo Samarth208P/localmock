@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DATA_TYPE_CATEGORIES, ALL_DATA_TYPES, findDataType, type DataTypeOption } from '@/lib/dataTypes';
 import { useSchemaStore } from '@/store/schemaStore';
 import { CATEGORY_ICONS } from '@/components/shared/Icons';
@@ -26,6 +26,14 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
   const [search, setSearch] = useState('');
   const [openPickerIdx, setOpenPickerIdx] = useState<number | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  // Sync initial fields to parent on mount so "Next" button appears immediately
+  // if default fields are present.
+  useEffect(() => {
+    if (fields.length > 0) {
+      onFieldsChange?.(fields);
+    }
+  }, []);
 
   const updateAndCommit = useCallback((newFields: FieldRow[]) => {
     setFields(newFields);
@@ -163,10 +171,10 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 <button
                   onClick={() => setExpandedIdx(isExpanded ? null : idx)}
                   title="Configure options"
-                  className={`h-8 px-2 rounded-lg border text-xs transition-all duration-200 ${
+                  className={`h-8 w-10 flex items-center justify-center rounded-lg border text-sm transition-all duration-200 ${
                     isExpanded
                       ? 'border-accent/40 bg-accent/10 text-accent'
-                      : 'border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary'
+                      : 'border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary hover:bg-bg-secondary'
                   }`}
                 >
                   ⚙
@@ -176,7 +184,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
               {/* Remove */}
               <button
                 onClick={() => removeField(field.id)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-all duration-200 text-sm"
+                className="h-8 w-10 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-all duration-200 text-base font-bold"
                 aria-label="Remove field"
               >
                 ×
@@ -184,7 +192,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
             </div>
 
             {/* Expanded options panel */}
-            {isExpanded && typeDef && typeDef.options.length > 0 && (
+            {isExpanded && typeDef && typeDef.options.length > 0 && openPickerIdx !== idx && (
               <div className="animate-scale-in border-t border-border-subtle/50 px-3 pb-3 pt-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   {typeDef.options.map((opt) => (
@@ -241,6 +249,74 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 </div>
               </div>
             )}
+
+            {/* Type picker inline panel */}
+            {openPickerIdx === idx && (
+              <div className="animate-scale-in border-t border-border-subtle/50 p-3 space-y-3 relative bg-bg-secondary/30">
+                <div className="flex items-center justify-between gap-3">
+                  {/* Search */}
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search 80+ types..."
+                    className="flex-1 rounded-lg border border-border-subtle bg-bg-tertiary px-3 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-all duration-200"
+                    autoFocus
+                  />
+                  
+                  {/* Close */}
+                  <button
+                    onClick={() => { setOpenPickerIdx(null); setSearch(''); }}
+                    className="flex-shrink-0 rounded-md bg-error/10 px-3 py-2 text-[11px] font-semibold text-error hover:bg-error/20 transition-all duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {/* Results */}
+                <div className="max-h-[300px] overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>
+                  {filteredTypes ? (
+                    // Filtered search results
+                    <>
+                      {filteredTypes.map((type) => (
+                        <button
+                          key={type.id}
+                          onClick={() => updateFieldType(field.id, type)}
+                          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs hover:bg-bg-tertiary transition-colors"
+                        >
+                          <span className="text-text-primary font-medium">{type.label}</span>
+                          <span className="ml-auto text-[10px] text-text-muted">{type.category}</span>
+                        </button>
+                      ))}
+                      {filteredTypes.length === 0 && (
+                        <p className="text-xs text-text-muted text-center py-4">No types match "{search}"</p>
+                      )}
+                    </>
+                  ) : (
+                    // Category grid
+                    DATA_TYPE_CATEGORIES.map((cat) => (
+                      <div key={cat.id}>
+                        <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5 sticky top-0 bg-bg-secondary py-1">
+                          {CATEGORY_ICONS[cat.id] && (() => { const Icon = CATEGORY_ICONS[cat.id]; return <Icon size={12} className="opacity-60" />; })()}
+                          <span>{cat.label}</span>
+                        </p>
+                        <div className="grid grid-cols-2 gap-0.5">
+                          {cat.types.map((type) => (
+                            <button
+                              key={type.id}
+                              onClick={() => updateFieldType(field.id, type)}
+                              className="rounded-md px-2 py-1.5 text-left text-[11px] text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors truncate"
+                            >
+                              {type.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
@@ -252,72 +328,6 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
       >
         + Add Field
       </button>
-
-      {/* Type picker dropdown */}
-      {openPickerIdx !== null && (
-        <div className="animate-scale-in rounded-xl border border-border-subtle bg-bg-secondary shadow-2xl shadow-black/20 p-3 space-y-3">
-          {/* Search */}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search 80+ types..."
-            className="w-full rounded-lg border border-border-subtle bg-bg-tertiary px-3 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-all duration-200"
-            autoFocus
-          />
-
-          {/* Results */}
-          <div className="max-h-[300px] overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>
-            {filteredTypes ? (
-              // Filtered search results
-              <>
-                {filteredTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => updateFieldType(fields[openPickerIdx].id, type)}
-                    className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs hover:bg-bg-tertiary transition-colors"
-                  >
-                    <span className="text-text-primary font-medium">{type.label}</span>
-                    <span className="ml-auto text-[10px] text-text-muted">{type.category}</span>
-                  </button>
-                ))}
-                {filteredTypes.length === 0 && (
-                  <p className="text-xs text-text-muted text-center py-4">No types match "{search}"</p>
-                )}
-              </>
-            ) : (
-              // Category grid
-              DATA_TYPE_CATEGORIES.map((cat) => (
-                <div key={cat.id}>
-                  <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5 sticky top-0 bg-bg-secondary py-1">
-                    {CATEGORY_ICONS[cat.id] && (() => { const Icon = CATEGORY_ICONS[cat.id]; return <Icon size={12} className="opacity-60" />; })()}
-                    <span>{cat.label}</span>
-                  </p>
-                  <div className="grid grid-cols-2 gap-0.5">
-                    {cat.types.map((type) => (
-                      <button
-                        key={type.id}
-                        onClick={() => updateFieldType(fields[openPickerIdx].id, type)}
-                        className="rounded-md px-2 py-1.5 text-left text-[11px] text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors truncate"
-                      >
-                        {type.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Close */}
-          <button
-            onClick={() => { setOpenPickerIdx(null); setSearch(''); }}
-            className="w-full rounded-lg border border-border-subtle py-1.5 text-[11px] text-text-muted hover:text-text-primary transition-all duration-200"
-          >
-            Close
-          </button>
-        </div>
-      )}
     </div>
   );
 }

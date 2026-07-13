@@ -87,6 +87,8 @@ export interface RowContext {
   careerStartYear: number;
   /** Semantic: seniority level (derived from career length) */
   seniority: 'junior' | 'mid' | 'senior' | 'lead' | 'executive';
+  /** Semantic: consistent currency for the row */
+  currency: { code: string; name: string };
 }
 
 export function createRowContext(seed?: number): RowContext {
@@ -117,7 +119,9 @@ export function createRowContext(seed?: number): RowContext {
   else if (yearsExperience <= 15) seniority = 'lead';
   else seniority = 'executive';
 
-  return { rng, region, firstName, lastName, gender, company, city, country, phoneFormat: data.phoneFormat, age, careerStartYear, seniority };
+  const currency = rng.pick(P.CURRENCIES);
+
+  return { rng, region, firstName, lastName, gender, company, city, country, phoneFormat: data.phoneFormat, age, careerStartYear, seniority, currency };
 }
 
 // --- Email (12 patterns, uses local domain per country) ---
@@ -128,12 +132,20 @@ function genEmail(ctx: RowContext, domainOverride?: string): string {
   const ln = ctx.lastName.toLowerCase().replace(/[^a-z]/g, '');
   const compSlug = ctx.company.toLowerCase().replace(/[^a-z]/g, '');
 
-  // Pick domain: 25% company, 75% local country domain
-  const domain = domainOverride?.replace(/^@/, '') || (
-    rng.bool(0.25)
-      ? `${compSlug}.com`
-      : Locale.getLocalEmailDomain(ctx.country.code)
-  );
+  let domain = domainOverride?.replace(/^@/, '');
+  if (!domain) {
+    const roll = rng.next();
+    if (roll < 0.70) {
+      // 70% common public domains
+      domain = rng.pick(['gmail.com', 'yahoo.com', 'zoho.com', 'outlook.com', 'hotmail.com']);
+    } else if (roll < 0.90) {
+      // 20% company domains
+      domain = `${compSlug}.com`;
+    } else {
+      // 10% localized country domains
+      domain = Locale.getLocalEmailDomain(ctx.country.code);
+    }
+  }
 
   const yr = String(randInt(rng, 1985, 2005)).slice(2);
   const n = randInt(rng, 1, 99);
@@ -381,8 +393,8 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
 
     // ══════ FINANCE (Luhn-valid, country-specific) ══════
     case 'amount': return randFloat(rng, Number(opts.min) || 0, Number(opts.max) || 10000, Number(opts.decimals) || 2);
-    case 'currencyCode': return rng.pick(P.CURRENCIES).code;
-    case 'currencyName': return rng.pick(P.CURRENCIES).name;
+    case 'currencyCode': return ctx.currency.code;
+    case 'currencyName': return ctx.currency.name;
     case 'creditCard': return genCreditCard(rng, (opts.network as string) || 'any');
     case 'iban': return genIBAN(rng, (opts.country as string) || ctx.country.code);
     case 'bic': return genBIC(rng, ctx.country.code);

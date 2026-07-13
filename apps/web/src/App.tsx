@@ -27,6 +27,7 @@ function App() {
   const fieldsRef = useRef<FieldRow[]>([]);
   const lastFieldDefsRef = useRef<FieldDef[]>([]);
   const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
+  const [hasManualFields, setHasManualFields] = useState(false);
 
   // Hydrate schema from URL on initial load
   useEffect(() => {
@@ -34,14 +35,16 @@ function App() {
     if (fields && fields.length > 0) {
       setUrlFields(fields);
       fieldsRef.current = fields;
+      setHasManualFields(fields.some((f) => f.name.trim().length > 0));
     }
   }, []);
 
-  const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0;
+  const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0 || hasManualFields;
   const tableName = parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
     fieldsRef.current = fields;
+    setHasManualFields(fields.some((f) => f.name.trim().length > 0));
   }, []);
 
   const handleGenerate = useCallback(() => {
@@ -115,17 +118,19 @@ function App() {
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Step 1: Schema Input */}
         {step === 'input' && (
-          <div className="animate-in flex flex-1 flex-col items-center overflow-y-auto px-6 py-10">
-            <div className="w-full max-w-2xl">
-              <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
-                Define your data
-              </h1>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                Paste a schema from any language, or build fields manually with 80+ data types.
-              </p>
+          <div className="animate-in flex flex-1 flex-col overflow-y-auto px-6 py-8 lg:py-12">
+            <div className="w-full max-w-6xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl sm:text-4xl font-bold text-text-primary tracking-tight mb-2">
+                  Define your data
+                </h1>
+                <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-xl">
+                  Paste a schema from any language, or build fields manually with 80+ data types.
+                </p>
+              </div>
 
               <div className="mt-8">
-                <SchemaEditor onFieldsChange={handleFieldsChange} urlFields={urlFields} />
+                <SchemaEditor onFieldsChange={handleFieldsChange} initialFields={fieldsRef.current.length > 0 ? fieldsRef.current : urlFields} />
               </div>
 
               {parseError && (
@@ -135,12 +140,15 @@ function App() {
               )}
 
               {hasSchema && (
-                <button
-                  onClick={handleProceedToConfigure}
-                  className="animate-slide-up mt-8 w-full rounded-xl bg-accent py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]"
-                >
-                  Next: Configure & Generate →
-                </button>
+                <div className="sticky bottom-6 mt-8 flex justify-center sm:justify-end pb-4">
+                  <button
+                    onClick={handleProceedToConfigure}
+                    className="animate-slide-up flex items-center gap-2 rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-200 hover:bg-accent-hover hover:-translate-y-0.5 active:scale-95"
+                  >
+                    Configure & Generate
+                    <span className="text-lg leading-none">→</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -152,9 +160,9 @@ function App() {
             <div className="w-full max-w-2xl">
               <button
                 onClick={goBack}
-                className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-1"
               >
-                <span className="text-base">←</span>
+                <span className="text-base leading-none">←</span>
                 <span>Back to Schema</span>
               </button>
 
@@ -246,9 +254,9 @@ function App() {
             <aside className="w-[300px] flex-shrink-0 border-r border-border-subtle overflow-y-auto p-5">
               <button
                 onClick={goBack}
-                className="mb-5 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
+                className="mb-5 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-1"
               >
-                <span className="text-base">←</span>
+                <span className="text-base leading-none">←</span>
                 <span>Back</span>
               </button>
 

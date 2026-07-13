@@ -11,16 +11,16 @@ type InputMode = 'choose' | 'paste' | 'build' | 'multi-table';
 
 interface SchemaEditorProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
-  urlFields?: FieldRow[];
+  initialFields?: FieldRow[];
 }
 
-export function SchemaEditor({ onFieldsChange, urlFields }: SchemaEditorProps) {
+export function SchemaEditor({ onFieldsChange, initialFields }: SchemaEditorProps) {
   const { rawInput, setRawInput, setParsedSchema, setParseError, parsedSchema } = useSchemaStore();
   const [mode, setMode] = useState<InputMode>(
-    urlFields && urlFields.length > 0 ? 'build' : rawInput || parsedSchema ? 'paste' : 'choose'
+    initialFields && initialFields.length > 0 ? 'build' : rawInput || parsedSchema ? 'paste' : 'choose'
   );
   const [isFocused, setIsFocused] = useState(false);
-  const [restoredFields, setRestoredFields] = useState<FieldRow[] | undefined>(urlFields);
+  const [restoredFields, setRestoredFields] = useState<FieldRow[] | undefined>(initialFields);
 
   const handleParse = useCallback(
     (input: string) => {
@@ -90,68 +90,76 @@ export function SchemaEditor({ onFieldsChange, urlFields }: SchemaEditorProps) {
   // Mode: Choose (initial)
   if (mode === 'choose') {
     return (
-      <div className="space-y-6">
-        {/* Two mode cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            onClick={() => setMode('paste')}
-            className="group rounded-xl border border-border-subtle bg-bg-secondary p-5 text-left transition-all duration-300 ease-out hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
-          >
-            <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
-              <IconClipboard size={24} />
-            </div>
-            <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
-              Paste Schema
-            </p>
-            <p className="mt-1 text-xs text-text-muted leading-relaxed">
-              TypeScript, Prisma, JSON, Go, Python, Rust, SQL — we detect it all.
-            </p>
-          </button>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 animate-in fade-in zoom-in-95 duration-200">
+        {/* Left Column: Main Actions */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => setMode('paste')}
+              className="group col-span-1 sm:col-span-2 rounded-2xl border border-accent/40 bg-bg-secondary p-5 sm:p-6 text-left transition-[border-color,box-shadow,transform] duration-300 ease-out hover:border-accent hover:shadow-[0_0_25px_rgba(99,102,241,0.15)] hover:-translate-y-0.5 relative overflow-hidden"
+            >
+              <div className="absolute -right-4 -top-8 opacity-5 group-hover:opacity-10 transition-opacity duration-300 text-accent">
+                <IconClipboard size={140} />
+              </div>
+              <div className="relative z-10">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                  <IconClipboard size={20} />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors">
+                  Paste your Schema
+                </h3>
+                <p className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl">
+                  The fastest way to start. Paste TypeScript, Prisma, JSON, Go, Python, Rust, or SQL. We auto-detect the format and instantly configure your generators.
+                </p>
+              </div>
+            </button>
 
-          <button
-            onClick={() => setMode('build')}
-            className="group rounded-xl border border-border-subtle bg-bg-secondary p-5 text-left transition-all duration-300 ease-out hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
-          >
-            <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
-              <IconWrench size={24} />
-            </div>
-            <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
-              Build Manually
-            </p>
-            <p className="mt-1 text-xs text-text-muted leading-relaxed">
-              Add fields one by one. Pick from 80+ data types across 12 categories.
-            </p>
-          </button>
+            <button
+              onClick={() => setMode('build')}
+              className="group rounded-2xl border border-border-subtle bg-bg-secondary p-5 text-left transition-[border-color,box-shadow,transform,background-color] duration-300 ease-out hover:border-accent/40 hover:bg-bg-tertiary hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
+            >
+              <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
+                <IconWrench size={22} />
+              </div>
+              <p className="text-base font-medium text-text-primary group-hover:text-accent transition-colors">
+                Build Manually
+              </p>
+              <p className="mt-1.5 text-xs text-text-muted leading-relaxed">
+                Construct fields one by one using our library of 80+ data types.
+              </p>
+            </button>
 
-          <button
-            onClick={() => setMode('multi-table')}
-            className="group rounded-xl border border-border-subtle bg-bg-secondary p-5 text-left transition-all duration-300 ease-out hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
-          >
-            <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
-              Multi-Table
-            </p>
-            <p className="mt-1 text-xs text-text-muted leading-relaxed">
-              Define related tables with foreign keys. Generates in dependency order.
-            </p>
-          </button>
+            <button
+              onClick={() => setMode('multi-table')}
+              className="group rounded-2xl border border-border-subtle bg-bg-secondary p-5 text-left transition-[border-color,box-shadow,transform,background-color] duration-300 ease-out hover:border-accent/40 hover:bg-bg-tertiary hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
+            >
+              <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
+                </svg>
+              </div>
+              <p className="text-base font-medium text-text-primary group-hover:text-accent transition-colors">
+                Multi-Table Setup
+              </p>
+              <p className="mt-1.5 text-xs text-text-muted leading-relaxed">
+                Define relational data with foreign keys and dependencies.
+              </p>
+            </button>
+          </div>
         </div>
 
-        {/* Templates */}
-        <div>
-          <p className="mb-3 text-xs font-medium text-text-muted uppercase tracking-wider">
-            Start from a template
-          </p>
-          <TemplateGallery onSelect={handleTemplateLoad} />
-        </div>
+        {/* Right Column: Templates & History */}
+        <div className="lg:col-span-5 space-y-6 border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0 lg:pl-10">
+          <div>
+            <p className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Start from a template
+            </p>
+            <TemplateGallery onSelect={handleTemplateLoad} />
+          </div>
 
-        {/* Schema history */}
-        <div>
-          <HistoryPanel onRestore={handleRestoreFromHistory} />
+          <div className="pt-4">
+            <HistoryPanel onRestore={handleRestoreFromHistory} />
+          </div>
         </div>
       </div>
     );
@@ -160,13 +168,13 @@ export function SchemaEditor({ onFieldsChange, urlFields }: SchemaEditorProps) {
   // Mode: Build manually
   if (mode === 'build') {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
         <div className="flex items-center justify-between">
           <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+            onClick={() => setMode('choose')}
+            className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
           >
-            ← Back
+            <span className="text-sm leading-none">←</span> Back to Options
           </button>
           <span className="text-xs text-text-muted">Manual Builder</span>
         </div>
@@ -182,10 +190,10 @@ export function SchemaEditor({ onFieldsChange, urlFields }: SchemaEditorProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+            onClick={() => setMode('choose')}
+            className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
           >
-            ← Back
+            <span className="text-sm leading-none">←</span> Back to Options
           </button>
           <span className="text-xs text-text-muted">Multi-Table Builder</span>
         </div>
@@ -200,10 +208,13 @@ export function SchemaEditor({ onFieldsChange, urlFields }: SchemaEditorProps) {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <button
-          onClick={handleReset}
-          className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+          onClick={() => {
+            // Only go back to menu without completely wiping store state so it survives
+            setMode('choose');
+          }}
+          className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
         >
-          ← Back
+          <span className="text-sm leading-none">←</span> Back to Options
         </button>
         {rawInput && (
           <button
