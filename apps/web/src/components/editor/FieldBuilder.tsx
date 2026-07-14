@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { DATA_TYPE_CATEGORIES, ALL_DATA_TYPES, findDataType, type DataTypeOption } from '@/lib/dataTypes';
 import { useSchemaStore } from '@/store/schemaStore';
 import { CATEGORY_ICONS } from '@/components/shared/Icons';
+import { Select } from '@/components/shared/Select';
 import {
   DndContext,
   closestCenter,
@@ -467,15 +468,12 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                               <label className="text-sm font-medium text-text-primary">{opt.label}</label>
 
                               {opt.type === 'select' && (
-                                <select
+                                <Select
                                   value={String(field.options[opt.key] ?? opt.default)}
-                                  onChange={(e) => updateFieldOption(field.id, opt.key, e.target.value)}
-                                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary focus:border-accent focus:outline-none transition-all duration-200 appearance-none"
-                                >
-                                  {opt.choices?.map((c) => (
-                                    <option key={c} value={c} className="bg-bg-tertiary text-text-primary">{c}</option>
-                                  ))}
-                                </select>
+                                  onChange={(val) => updateFieldOption(field.id, opt.key, val)}
+                                  options={opt.choices?.map(c => ({ value: c, label: c })) || []}
+                                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary focus:border-accent focus:outline-none transition-all duration-200"
+                                />
                               )}
 
                               {opt.type === 'number' && (

@@ -189,4 +189,25 @@
     cursor: not-allowed;
     filter: grayscale(0.3);
   }
+
+  /* React Flow Overrides */
+  .react-flow__controls-button {
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    fill: var(--text-secondary) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+  }
+  
+  .react-flow__controls-button:hover {
+    background-color: var(--border-subtle) !important;
+    fill: var(--text-primary) !important;
+  }
+
+  .react-flow__controls-button:last-child {
+    border-bottom: none !important;
+  }
 }

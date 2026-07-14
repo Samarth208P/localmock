@@ -111,9 +111,13 @@ export function PreviewCanvas() {
         className="react-flow-dark"
         minZoom={0.1}
         maxZoom={1.5}
+        proOptions={{ hideAttribution: true }}
       >
         <Background color="#3f3f46" gap={16} size={1} />
-        <Controls className="!bg-bg-secondary !border-border-subtle !fill-text-primary" />
+        <Controls 
+          className="bg-bg-tertiary border border-border-subtle shadow-xl rounded-xl overflow-hidden flex flex-col p-1 gap-1" 
+          showInteractive={false}
+        />
         <MiniMap 
           nodeColor="#27272a" 
           maskColor="rgba(0, 0, 0, 0.4)" 

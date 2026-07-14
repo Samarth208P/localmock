@@ -1,4 +1,5 @@
 import type { ParsedColumn } from '@/store/schemaStore';
+import { Select } from '../shared/Select';
 
 interface ColumnRowProps {
   column: ParsedColumn;
@@ -45,24 +46,18 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
       </span>
 
       {/* Type selector */}
-      <select
+      <Select
         value={column.type}
-        onChange={(e) => {
-          const opt = TYPE_OPTIONS.find((o) => o.type === e.target.value);
+        onChange={(val) => {
+          const opt = TYPE_OPTIONS.find((o) => o.type === val);
           if (opt) onTypeChange(column.id, opt.type, opt.method);
         }}
         disabled={column.confidence === 'high'}
+        options={TYPE_OPTIONS.map(o => ({ value: o.type, label: o.label }))}
         className={`h-7 w-[120px] rounded border border-border-subtle bg-bg-tertiary px-2 text-xs text-text-secondary focus:border-accent focus:outline-none ${
           column.confidence === 'high' ? 'opacity-60 cursor-not-allowed' : ''
         }`}
-        aria-label={`Data type for ${column.name}`}
-      >
-        {TYPE_OPTIONS.map((opt) => (
-          <option key={opt.type} value={opt.type} className="bg-bg-tertiary text-text-primary">
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      />
 
       {/* Confidence badge */}
       <span
