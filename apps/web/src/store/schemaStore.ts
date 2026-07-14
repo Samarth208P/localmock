@@ -20,6 +20,13 @@ export interface ParsedSchema {
 export interface ParsedTable {
   name: string;
   columns: ParsedColumn[];
+  relations?: {
+    fromTable: string;
+    fromField: string;
+    toTable: string;
+    toField: string;
+    cardinality: string;
+  }[];
 }
 
 interface SchemaState {

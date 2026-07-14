@@ -11,8 +11,9 @@ import { useSchemaStore } from '@/store/schemaStore';
 import { useChaosStore } from '@/store/chaosStore';
 import { useAppStore } from '@/store/appStore';
 import { useMultiTableStore } from '@/store/multiTableStore';
-import { useWorker } from '@/hooks/useWorker';
-import { decodeSchemaFromUrl, encodeSchemaToUrl } from '@/lib/shareableUrl';
+import { useWorkerPool, type MultiTableGenDef } from '@/hooks/useWorkerPool';
+import { sortTablesTopologically, type DependencyEdge } from '@/lib/topologicalSort';
+import { decodeSchemaFromUrl, encodeSchemaToUrl, clearSchemaFromUrl } from '@/lib/shareableUrl';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
 
@@ -22,7 +23,15 @@ function App() {
 
   const { step, setStep, goBack } = useAppStore();
   const multiTable = useMultiTableStore();
-  const { generate, rows, isGenerating } = useWorker();
+  const {
+    generate,
+    generateMultiTable,
+    rows,
+    multiTableRows,
+    activeViewTable,
+    setActiveViewTable,
+    isGenerating,
+  } = useWorkerPool();
   const [rowCount, setRowCount] = useState(1000);
   const fieldsRef = useRef<FieldRow[]>([]);
   const lastFieldDefsRef = useRef<FieldDef[]>([]);
@@ -40,8 +49,14 @@ function App() {
   }, []);
 
   const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0 || hasManualFields;
-  const tableName = parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
+  const tableName = activeViewTable || parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
 
+  // Get the rows for the currently active view table
+  const viewRows = activeViewTable && multiTableRows[activeViewTable]
+    ? multiTableRows[activeViewTable]
+    : rows;
+  const tableNames = Object.keys(multiTableRows);
+  const isMultiTable = tableNames.length > 1;
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
     fieldsRef.current = fields;
@@ -76,7 +91,55 @@ function App() {
           }));
       }
     } else if (parsedSchema && parsedSchema.tables.length > 0) {
-      // Fallback: use parsed schema columns (from paste mode)
+      // Check if we have multiple tables with relations → use multi-table generation
+      const hasRelations = parsedSchema.tables.some(t => t.relations && t.relations.length > 0);
+
+      if (parsedSchema.tables.length > 1 && hasRelations) {
+        // Multi-table relational generation
+        const tableNames = parsedSchema.tables.map(t => t.name);
+
+        // Build dependency edges for topological sort
+        const depEdges: DependencyEdge[] = [];
+        for (const table of parsedSchema.tables) {
+          if (table.relations) {
+            for (const rel of table.relations) {
+              depEdges.push({ from: table.name, to: rel.toTable });
+            }
+          }
+        }
+
+        const sortedNames = sortTablesTopologically(tableNames, depEdges);
+
+        const multiTableDefs: MultiTableGenDef[] = sortedNames.map(name => {
+          const t = parsedSchema.tables.find(pt => pt.name === name)!;
+          return {
+            tableName: name,
+            fields: t.columns.map(col => ({
+              name: col.name,
+              typeId: col.type,
+              options: {},
+              unique: col.isUnique,
+            })),
+            rowCount,
+            relations: (t.relations || []).map(r => ({
+              fromField: r.fromField,
+              toTable: r.toTable,
+              toField: r.toField,
+            })),
+          };
+        });
+
+        // Don't encode multi-table schemas to URL — they're too large.
+        // The raw SQL in schemaStore is the source of truth.
+        clearSchemaFromUrl();
+        lastFieldDefsRef.current = multiTableDefs[0].fields;
+
+        generateMultiTable(multiTableDefs);
+        setStep('preview');
+        return;
+      }
+
+      // Single table from paste mode
       const table = parsedSchema.tables[0];
       fieldDefs = table.columns.map((col) => ({
         name: col.name,
@@ -102,7 +165,7 @@ function App() {
     lastFieldDefsRef.current = fieldDefs;
     generate(fieldDefs, rowCount);
     setStep('preview');
-  }, [parsedSchema, generate, setStep, rowCount]);
+  }, [parsedSchema, generate, generateMultiTable, setStep, rowCount]);
 
   const handleProceedToConfigure = useCallback(() => {
     if (hasSchema) setStep('configure');
@@ -246,6 +309,7 @@ function App() {
         {/* Step 3: Preview + Export */}
         {step === 'preview' && (
           <div className="animate-in flex flex-1 overflow-hidden">
+            {/* Left sidebar: scrollable export panel */}
             <aside className="w-[300px] flex-shrink-0 border-r border-border-subtle overflow-y-auto p-5">
               <button
                 onClick={goBack}
@@ -255,7 +319,34 @@ function App() {
                 <span>Back</span>
               </button>
 
-              <ExportPanel rows={rows} tableName={tableName} fieldDefs={lastFieldDefsRef.current} totalRowCount={rowCount} />
+              {/* Multi-table selector */}
+              {isMultiTable && (
+                <div className="mb-5">
+                  <label className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2 block">
+                    Viewing Table
+                  </label>
+                  <div className="space-y-1">
+                    {tableNames.map(name => (
+                      <button
+                        key={name}
+                        onClick={() => setActiveViewTable(name)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                          activeViewTable === name
+                            ? 'bg-accent/10 text-accent border border-accent/30'
+                            : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary border border-transparent'
+                        }`}
+                      >
+                        <span className="font-mono">{name}</span>
+                        <span className="ml-2 text-text-muted">
+                          ({(multiTableRows[name]?.length || 0).toLocaleString()} rows)
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ExportPanel rows={viewRows} tableName={tableName} fieldDefs={lastFieldDefsRef.current} totalRowCount={rowCount} />
 
               <button
                 onClick={() => setStep('configure')}
@@ -265,6 +356,7 @@ function App() {
               </button>
             </aside>
 
+            {/* Right side: fixed playground canvas */}
             <section className="flex flex-1 flex-col overflow-hidden relative">
               <PreviewCanvas />
             </section>

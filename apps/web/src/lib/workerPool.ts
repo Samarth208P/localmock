@@ -20,6 +20,7 @@ export interface WorkerPoolOptions {
   onProgress?: (progress: PoolProgress) => void;
   onPartial?: (rows: Record<string, unknown>[]) => void;
   maxWorkers?: number;
+  relationalContext?: Record<string, unknown[]>;
 }
 
 export interface WorkerPoolResult {
@@ -50,7 +51,7 @@ function splitWork(total: number, chunks: number): number[] {
  * Run generation across a pool of workers in parallel.
  */
 export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolResult> {
-  const { fields, rowCount, onProgress, onPartial, maxWorkers } = options;
+  const { fields, rowCount, onProgress, onPartial, maxWorkers, relationalContext } = options;
   const workerCount = getWorkerCount(maxWorkers);
   const chunks = splitWork(rowCount, workerCount);
   const start = performance.now();
@@ -72,51 +73,48 @@ export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolRes
 
       worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
         if (hasError) return;
-        const data = event.data;
+        const msg = event.data;
 
-        switch (data.type) {
+        switch (msg.type) {
+          case 'partial':
+            // Send partial results from first worker immediately
+            if (i === 0 && onPartial) {
+              onPartial(msg.rows);
+            }
+            break;
           case 'progress':
-            progress[i] = data.generated;
+            progress[i] = msg.generated;
             if (onProgress) {
               const totalGenerated = progress.reduce((a, b) => a + b, 0);
               onProgress({
                 generated: totalGenerated,
                 total: rowCount,
-                percent: Math.round((totalGenerated / rowCount) * 100),
+                percent: Math.min(100, Math.floor((totalGenerated / rowCount) * 100)),
               });
             }
             break;
-
           case 'result':
-            results[i] = data.rows;
+            results[i] = msg.rows;
             completedWorkers++;
-
-            // Send partial results from first worker immediately
-            if (i === 0 && onPartial && data.rows.length > 0) {
-              onPartial(data.rows.slice(0, 10));
-            }
-
             if (completedWorkers === workerCount) {
-              // Merge all results in order
-              const merged: Record<string, unknown>[] = [];
-              for (const chunk of results) {
-                if (chunk) merged.push(...chunk);
-              }
-
+              const allRows = results.reduce((acc: Record<string, unknown>[], curr) => {
+                if (curr) acc.push(...curr);
+                return acc;
+              }, []);
+              
               // Terminate all workers
               workers.forEach((w) => w.terminate());
-
               resolve({
-                rows: merged,
-                duration: performance.now() - start,
+                rows: allRows,
+                duration: Math.round(performance.now() - start),
               });
             }
             break;
-
           case 'error':
+            if (hasError) return;
             hasError = true;
             workers.forEach((w) => w.terminate());
-            reject(new Error(data.message));
+            reject(new Error(msg.message));
             break;
         }
       };
@@ -133,6 +131,7 @@ export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolRes
         type: 'generate',
         fields,
         rowCount: chunks[i],
+        relationalContext,
       });
     }
   });

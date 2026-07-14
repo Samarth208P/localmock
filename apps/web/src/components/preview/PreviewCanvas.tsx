@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { 
   ReactFlow, 
   Background, 
@@ -65,13 +65,32 @@ export function PreviewCanvas() {
       }));
 
     } else if (parsedSchema && parsedSchema.tables.length > 0) {
-      // Paste mode (single table typically, or multiple if we parse them)
+      // Collect all fields that are targets of foreign keys (i.e., referenced PKs)
+      const referencedFields = new Set<string>(); // "tableName.fieldName"
+      for (const t of parsedSchema.tables) {
+        if (t.relations) {
+          for (const r of t.relations) {
+            referencedFields.add(`${r.toTable}.${r.toField}`);
+          }
+        }
+      }
+
+      // Collect all FK source fields
+      const fkSourceFields = new Set<string>(); // "tableName.fieldName"
+      for (const t of parsedSchema.tables) {
+        if (t.relations) {
+          for (const r of t.relations) {
+            fkSourceFields.add(`${t.name}.${r.fromField}`);
+          }
+        }
+      }
+
       nodes = parsedSchema.tables.map((t, index) => {
         const x = (index % 3) * 450 + 50;
         const y = Math.floor(index / 3) * 400 + 50;
 
         return {
-          id: `parsed-${index}`,
+          id: t.name,
           type: 'table',
           position: { x, y },
           data: {
@@ -81,11 +100,28 @@ export function PreviewCanvas() {
               typeId: col.type,
               options: {},
               unique: col.isUnique,
-              isPrimaryKey: col.name.toLowerCase() === 'id',
-              isForeignKey: false // Not parsed yet
+              isPrimaryKey: referencedFields.has(`${t.name}.${col.name}`),
+              isForeignKey: fkSourceFields.has(`${t.name}.${col.name}`),
             }))
           }
         };
+      });
+      
+      parsedSchema.tables.forEach((t) => {
+        if (t.relations) {
+          t.relations.forEach((r, rIdx) => {
+            edges.push({
+              id: `${t.name}-${r.fromField}-${r.toTable}-${rIdx}`,
+              source: t.name,
+              target: r.toTable,
+              sourceHandle: r.fromField,
+              targetHandle: r.toField,
+              animated: true,
+              type: 'smoothstep',
+              style: { stroke: '#6366f1', strokeWidth: 2.5 },
+            });
+          });
+        }
       });
     }
 
@@ -98,6 +134,14 @@ export function PreviewCanvas() {
   // Allow manual connecting just for fun, though it won't persist to the store here
   const onConnect = useCallback((params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, animated: true, type: 'default' }, eds)), [setEdges]);
 
+  const [rfInstance, setRfInstance] = useState<any>(null);
+
+  useEffect(() => {
+    if (rfInstance && nodes.length > 0) {
+      setTimeout(() => rfInstance.fitView({ padding: 0.2, duration: 800 }), 50);
+    }
+  }, [rfInstance, parsedSchema, tables.length]);
+
   return (
     <div className="w-full h-full relative bg-bg-primary">
       <ReactFlow
@@ -106,8 +150,10 @@ export function PreviewCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onInit={setRfInstance}
         nodeTypes={nodeTypes}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         className="react-flow-dark"
         minZoom={0.1}
         maxZoom={1.5}

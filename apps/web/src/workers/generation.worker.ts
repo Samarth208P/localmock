@@ -8,6 +8,7 @@
  * - 50-retry collision safety with graceful error
  * - Progress reporting every 1000 rows
  * - Auto-increment counter support
+ * - Relational context: foreign key fields draw from parent table values
  */
 
 import { generateTypedValue, createCtx } from '@localmock/core/generators';
@@ -19,12 +20,16 @@ export interface FieldDef {
   typeId: string;
   options: Record<string, unknown>;
   unique: boolean;
+  /** If set, this field draws values from relationalContext[foreignKeyRef] instead of generating */
+  foreignKeyRef?: string;
 }
 
 export interface GenerateMessage {
   type: 'generate';
   fields: FieldDef[];
   rowCount: number;
+  /** Maps "tableName.fieldName" -> array of values from parent tables */
+  relationalContext?: Record<string, unknown[]>;
 }
 
 export interface GenerateResult {
@@ -59,7 +64,7 @@ const PARTIAL_PREVIEW_SIZE = 10;
 // --- Worker handler ---
 
 self.onmessage = (event: MessageEvent<GenerateMessage>) => {
-  const { fields, rowCount } = event.data;
+  const { fields, rowCount, relationalContext } = event.data;
 
   try {
     const rows: Record<string, unknown>[] = [];
@@ -86,6 +91,13 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
       const row: Record<string, unknown> = {};
 
       for (const field of fields) {
+        // If this field is a foreign key with relational context, pick from parent values
+        if (field.foreignKeyRef && relationalContext && relationalContext[field.foreignKeyRef]) {
+          const parentValues = relationalContext[field.foreignKeyRef];
+          row[field.name] = parentValues[Math.floor(Math.random() * parentValues.length)];
+          continue;
+        }
+
         // Build options with internal counter for autoIncrement
         const opts = { ...field.options };
         if (field.typeId === 'autoIncrement') {

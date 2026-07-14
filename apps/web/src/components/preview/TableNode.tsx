@@ -34,7 +34,6 @@ export function TableNode({ data }: { data: TableNodeData }) {
     } catch (e) {
       console.error("Error generating sample data for node", e);
       return [];
-      return [];
     }
   }, [data.fields]);
 
@@ -93,23 +92,27 @@ export function TableNode({ data }: { data: TableNodeData }) {
               {field.typeId}
             </div>
             
-            {/* Handles for specific columns if we want to connect fields directly */}
-            {field.isForeignKey && (
-               <Handle 
-                 type="source" 
-                 position={Position.Right} 
-                 id={field.name} 
-                 className="!bg-blue-500 !w-2.5 !h-2.5 !border-2 !border-bg-primary !right-[-6px] opacity-0 group-hover:opacity-100 transition-all hover:scale-125" 
-               />
-            )}
-            {field.isPrimaryKey && (
-               <Handle 
-                 type="target" 
-                 position={Position.Left} 
-                 id={field.name} 
-                 className="!bg-yellow-500 !w-2.5 !h-2.5 !border-2 !border-bg-primary !left-[-6px] opacity-0 group-hover:opacity-100 transition-all hover:scale-125" 
-               />
-            )}
+            {/* Always render handles for edge connections */}
+            <Handle 
+              type="source" 
+              position={Position.Right} 
+              id={field.name} 
+              className={`!w-2.5 !h-2.5 !border-2 !border-bg-primary !right-[-6px] transition-all hover:scale-125 ${
+                field.isForeignKey 
+                  ? '!bg-blue-500 opacity-60 group-hover:opacity-100' 
+                  : '!bg-border-subtle opacity-0 group-hover:opacity-40'
+              }`} 
+            />
+            <Handle 
+              type="target" 
+              position={Position.Left} 
+              id={field.name} 
+              className={`!w-2.5 !h-2.5 !border-2 !border-bg-primary !left-[-6px] transition-all hover:scale-125 ${
+                field.isPrimaryKey 
+                  ? '!bg-yellow-500 opacity-60 group-hover:opacity-100' 
+                  : '!bg-border-subtle opacity-0 group-hover:opacity-40'
+              }`} 
+            />
           </div>
         ))}
       </div>

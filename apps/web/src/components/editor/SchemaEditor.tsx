@@ -56,6 +56,7 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
               isUnique: false,
               isSequential: false,
             })),
+            relations: t.relations || [],
           })),
         });
       }

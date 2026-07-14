@@ -41,9 +41,12 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border-subtle bg-bg-secondary px-4 py-2.5 transition-colors hover:border-border-active">
       {/* Field name */}
-      <span className="font-mono text-sm text-text-primary truncate">
-        {column.name}
-      </span>
+      <input
+        type="text"
+        value={column.name}
+        readOnly
+        className="h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 font-mono text-xs text-text-primary focus:border-accent focus:bg-bg-tertiary focus:outline-none transition-all duration-200"
+      />
 
       {/* Type selector */}
       <Select
@@ -54,8 +57,10 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
         }}
         disabled={column.confidence === 'high'}
         options={TYPE_OPTIONS.map(o => ({ value: o.type, label: o.label }))}
-        className={`h-7 w-[120px] rounded border border-border-subtle bg-bg-tertiary px-2 text-xs text-text-secondary focus:border-accent focus:outline-none ${
-          column.confidence === 'high' ? 'opacity-60 cursor-not-allowed' : ''
+        className={`h-8 w-[140px] rounded-lg border px-2.5 text-xs transition-all duration-200 text-text-primary font-medium focus:outline-none ${
+          column.confidence === 'high' 
+            ? 'opacity-60 cursor-not-allowed border-border-subtle bg-bg-tertiary' 
+            : 'border-border-subtle bg-bg-tertiary hover:border-border-active focus:border-accent focus:bg-accent/[0.04]'
         }`}
       />
 

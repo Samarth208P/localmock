@@ -189,25 +189,48 @@
     cursor: not-allowed;
     filter: grayscale(0.3);
   }
+}
 
-  /* React Flow Overrides */
-  .react-flow__controls-button {
-    background-color: transparent !important;
-    border: none !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    fill: var(--text-secondary) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all 0.2s !important;
-  }
-  
-  .react-flow__controls-button:hover {
-    background-color: var(--border-subtle) !important;
-    fill: var(--text-primary) !important;
-  }
+/* React Flow Overrides — must be outside @layer to override library CSS */
+.react-flow__controls {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+  padding: 2px !important;
+}
 
-  .react-flow__controls-button:last-child {
-    border-bottom: none !important;
-  }
+.react-flow__controls-button {
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--text-secondary) !important;
+  transition: fill 0.2s !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--border-subtle) !important;
+}
+
+.react-flow__controls-button:hover svg {
+  fill: var(--text-primary) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+/* React Flow edge labels */
+.react-flow__edge-path {
+  stroke: var(--accent) !important;
 }
