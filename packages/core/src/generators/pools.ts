@@ -119,14 +119,20 @@ export const JOB_TITLES = [
 export const COMPANY_NAMES = [
   'Stripe','Notion','Linear','Figma','Vercel','Supabase','Railway','PlanetScale',
   'Datadog','Cloudflare','Twilio','Plaid','Brex','Rippling','Gusto','Deel',
-  'Acme Corp','TechForge','DataMesh','CloudNova','BrightPath','NexaFlow',
-  'Quantum Labs','Atlas Systems','CoreStack','VeloCity','PulseAI','InfinityLoop',
-  'Synapse Digital','Apex Solutions','OmniTech','ClearView','PixelCraft','FlowState',
-  'ZenithWorks','Momentum AI','Circuitry','EchoBase','NorthStar Tech','Catalyst IO',
-  'Horizon Labs','Prismatic','Ember Works','SkyBridge','DeepCore','Vantage Point',
-  'NovaByte','SilverLine','IronClad','BluePeak','GreenField','RedShift',
-  'SwiftCode','ByteForge','CodeVault','DevSphere','TerraForm','SkyNet Solutions',
-  'MindBridge','LogicGate','NeuralPath','CipherTech','VectorSpace','QuantumLeap',
+];
+
+export const COMPANY_PREFIXES = [
+  'Tech','Data','Cloud','Bright','Nexa','Quantum','Atlas','Core','Velo','Pulse','Infinity',
+  'Synapse','Apex','Omni','Clear','Pixel','Flow','Zenith','Momentum','Echo','NorthStar','Catalyst',
+  'Horizon','Prismatic','Ember','Sky','Deep','Vantage','Nova','Silver','Iron','Blue','Green','Red',
+  'Swift','Byte','Code','Dev','Terra','Mind','Logic','Neural','Cipher','Vector','Global',
+];
+
+export const COMPANY_ROOTS = [
+  'Forge','Mesh','Nova','Path','Flow','Labs','Systems','Stack','City','AI','Loop',
+  'Digital','Solutions','Tech','View','Craft','State','Works','Base','IO',
+  'Point','Byte','Line','Clad','Peak','Field','Shift','Code','Vault','Sphere',
+  'Form','Net','Bridge','Gate','Space','Leap','Corp','Data','Cloud',
 ];
 
 export const PRODUCT_ADJECTIVES = ['Ergonomic','Sleek','Premium','Handcrafted','Intelligent','Minimal','Professional','Ultra','Portable','Wireless','Sustainable','Compact','Modular','Adaptive','Precision'];

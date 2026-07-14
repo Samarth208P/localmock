@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 /**
  * All 30 schema templates bundled for the app.
  * Each template has: name, description, fields[].

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SQL_DIALECTS } from '@/lib/constants';
-import { serializeCSV, serializeJSON, serializeJSONL, serializeSQL, serializeMSW, serializeTSArray } from '@localmock/core/exports';
+import { serializeCSV, serializeJSON, serializeJSONL, serializeSQL, serializeMSW, serializeTSArray, serializeTSV, serializeCassandraCQL, serializeFirebase, serializeInfluxDB, serializeXML, serializeDBUnitXML, serializeExcelXML, serializeCustom } from '@localmock/core/exports';
 import { supportsFileSystemAccess } from '@/lib/browserDetect';
 import { showToast } from '@/components/shared/Toast';
 import { useStreamingExport } from '@/hooks/useStreamingExport';
@@ -19,7 +19,15 @@ const FORMATS = [
   { id: 'csv', label: 'CSV', Icon: IconFile, desc: 'Comma-separated values' },
   { id: 'json', label: 'JSON', Icon: IconBraces, desc: 'Array of objects' },
   { id: 'jsonl', label: 'JSON Lines', Icon: IconNewline, desc: 'One object per line' },
-  { id: 'sql', label: 'SQL INSERT', Icon: IconDatabase, desc: 'Ready for your database' },
+  { id: 'tsv', label: 'Tab-Delimited', Icon: IconFile, desc: 'Tab-separated values' },
+  { id: 'sql', label: 'SQL', Icon: IconDatabase, desc: 'Ready for your database' },
+  { id: 'cql', label: 'Cassandra CQL', Icon: IconDatabase, desc: 'Cassandra inserts' },
+  { id: 'firebase', label: 'Firebase', Icon: IconBraces, desc: 'Firebase JSON tree' },
+  { id: 'influx', label: 'InfluxDB', Icon: IconDatabase, desc: 'Line protocol format' },
+  { id: 'custom', label: 'Custom', Icon: IconFile, desc: 'Custom template' },
+  { id: 'excel', label: 'Excel', Icon: IconFile, desc: 'XML Spreadsheet 2003' },
+  { id: 'xml', label: 'XML', Icon: IconBraces, desc: 'Basic XML dataset' },
+  { id: 'dbunit', label: 'DBUnit XML', Icon: IconBraces, desc: 'DBUnit dataset format' },
   { id: 'msw', label: 'MSW Handler', Icon: IconPlug, desc: 'Mock Service Worker' },
   { id: 'ts', label: 'TS Array', Icon: IconPackage, desc: 'TypeScript constant' },
 ] as const;
@@ -59,10 +67,51 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
           filename = `localmock.jsonl`;
           mimeType = 'application/jsonl';
           break;
+        case 'tsv':
+          content = serializeTSV(rows);
+          filename = `localmock.tsv`;
+          mimeType = 'text/tab-separated-values';
+          break;
         case 'sql':
           content = serializeSQL(rows, tableName, sqlDialect as 'postgres' | 'mysql' | 'sqlite');
           filename = `localmock.sql`;
           mimeType = 'text/sql';
+          break;
+        case 'cql':
+          content = serializeCassandraCQL(rows, tableName);
+          filename = `localmock.cql`;
+          mimeType = 'text/plain';
+          break;
+        case 'firebase':
+          content = serializeFirebase(rows, tableName);
+          filename = `localmock.firebase.json`;
+          mimeType = 'application/json';
+          break;
+        case 'influx':
+          content = serializeInfluxDB(rows, tableName);
+          filename = `localmock.influx.txt`;
+          mimeType = 'text/plain';
+          break;
+        case 'custom':
+          // Using a simple default template for Custom
+          content = serializeCustom(rows, `{{id}} - {{name}}`);
+          filename = `localmock.custom.txt`;
+          mimeType = 'text/plain';
+          break;
+        case 'excel':
+          content = serializeExcelXML(rows);
+          filename = `localmock.xls`;
+          mimeType = 'application/vnd.ms-excel';
+          break;
+        case 'xml':
+          content = serializeXML(rows);
+          filename = `localmock.xml`;
+          mimeType = 'application/xml';
+          break;
+        case 'dbunit':
+          content = serializeDBUnitXML(rows, tableName);
+          filename = `localmock.dbunit.xml`;
+          mimeType = 'application/xml';
           break;
         case 'msw':
           content = serializeMSW(rows, `/api/${tableName}`);

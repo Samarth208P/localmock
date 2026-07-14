@@ -26,14 +26,14 @@ interface StreamMessage {
 }
 
 self.onmessage = (event: MessageEvent<StreamMessage>) => {
-  const { fields, rowCount, format, tableName, sqlDialect } = event.data;
+  const { fields, rowCount, format, tableName } = event.data;
 
   try {
     const startTime = performance.now();
     let generated = 0;
 
     // Write header
-    const header = getHeader(fields, format, tableName);
+    const header = getHeader(fields, format);
     if (header) {
       self.postMessage({ type: 'chunk', text: header });
     }
@@ -91,7 +91,7 @@ self.onmessage = (event: MessageEvent<StreamMessage>) => {
           row[field.name] = value;
         }
 
-        chunkText += serializeRow(row, fields, format, tableName, sqlDialect, i === 0 && chunkStart === 0);
+        chunkText += serializeRow(row, fields, format, tableName, i === 0 && chunkStart === 0);
         generated++;
       }
 
@@ -126,7 +126,7 @@ self.onmessage = (event: MessageEvent<StreamMessage>) => {
   }
 };
 
-function getHeader(fields: FieldDef[], format: string, tableName: string): string {
+function getHeader(fields: FieldDef[], format: string): string {
   switch (format) {
     case 'csv':
       return fields.map((f) => f.name).join(',') + '\n';
@@ -155,7 +155,6 @@ function serializeRow(
   fields: FieldDef[],
   format: string,
   tableName: string,
-  sqlDialect?: string,
   isFirst?: boolean,
 ): string {
   switch (format) {

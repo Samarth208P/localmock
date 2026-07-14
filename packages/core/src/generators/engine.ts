@@ -15,6 +15,9 @@
 import * as P from './pools';
 import * as Locale from './locale';
 import * as Intel from './intelligence';
+import * as Aviation from './aviation';
+import * as Tech from './tech';
+import * as Health from './health';
 import { createRng, type Rng } from './rng';
 
 // --- Constants ---
@@ -31,9 +34,6 @@ function randInt(rng: Rng, min: number, max: number): number {
 }
 function randFloat(rng: Rng, min: number, max: number, decimals: number): number {
   return rng.float(min, max, decimals);
-}
-function randElement<T>(rng: Rng, arr: readonly T[]): T {
-  return rng.pick(arr);
 }
 function randString(rng: Rng, len: number, charset: string): string {
   return rng.string(len, charset);
@@ -126,7 +126,7 @@ export function createRowContext(seed?: number): RowContext {
 
 // --- Email (12 patterns, uses local domain per country) ---
 
-function genEmail(ctx: RowContext, domainOverride?: string): string {
+function genEmail(ctx: RowContext, providerType: string = 'any', domainOverride?: string): string {
   const rng = ctx.rng;
   const fn = ctx.firstName.toLowerCase().replace(/[^a-z]/g, '');
   const ln = ctx.lastName.toLowerCase().replace(/[^a-z]/g, '');
@@ -134,16 +134,21 @@ function genEmail(ctx: RowContext, domainOverride?: string): string {
 
   let domain = domainOverride?.replace(/^@/, '');
   if (!domain) {
-    const roll = rng.next();
-    if (roll < 0.70) {
-      // 70% common public domains
-      domain = rng.pick(['gmail.com', 'yahoo.com', 'zoho.com', 'outlook.com', 'hotmail.com']);
-    } else if (roll < 0.90) {
-      // 20% company domains
+    if (providerType === 'freemail') {
+      domain = rng.pick(['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com']);
+    } else if (providerType === 'corporate') {
       domain = `${compSlug}.com`;
+    } else if (providerType === 'disposable') {
+      domain = rng.pick(['mailinator.com', '10minutemail.com', 'guerrillamail.com', 'temp-mail.org']);
     } else {
-      // 10% localized country domains
-      domain = Locale.getLocalEmailDomain(ctx.country.code);
+      const roll = rng.next();
+      if (roll < 0.70) {
+        domain = rng.pick(['gmail.com', 'yahoo.com', 'zoho.com', 'outlook.com', 'hotmail.com']);
+      } else if (roll < 0.90) {
+        domain = `${compSlug}.com`;
+      } else {
+        domain = Locale.getLocalEmailDomain(ctx.country.code);
+      }
     }
   }
 
@@ -239,18 +244,31 @@ function genBio(ctx: RowContext, length: string): string {
 
 // --- Password (realistic patterns) ---
 
-function genPassword(rng: Rng, len: number, symbols: boolean, numbers: boolean): string {
+function simulateHash(rng: Rng, type: string, raw: string): string {
+  if (type === 'bcrypt') {
+    return `$2b$10$${randString(rng, 53, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./')}`;
+  }
+  if (type === 'sha256') {
+    return randString(rng, 64, HEX);
+  }
+  return raw;
+}
+
+function genPassword(rng: Rng, len: number, symbols: boolean, numbers: boolean, hashing: string = 'raw'): string {
+  let raw: string;
   if (rng.bool(0.3) && len >= 8) {
     const words = ['Sunshine','Thunder','Dragon','Phoenix','Crystal','Shadow','Silver','Golden','Cosmic','Quantum','Nebula','Arctic','Blazer','Cipher','Mystic'];
     const word = rng.pick(words);
     const num = String(randInt(rng, 1, 999));
     const sym = symbols ? rng.pick(['!','@','#','$','&','*','_']) : '';
-    return `${word}${num}${sym}`.slice(0, len).padEnd(len, randString(rng, 1, 'abcdefghijklmnopqrstuvwxyz'));
+    raw = `${word}${num}${sym}`.slice(0, len).padEnd(len, randString(rng, 1, 'abcdefghijklmnopqrstuvwxyz'));
+  } else {
+    let cs = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (numbers) cs += '0123456789';
+    if (symbols) cs += '!@#$%^&*_+-=';
+    raw = randString(rng, len, cs);
   }
-  let cs = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  if (numbers) cs += '0123456789';
-  if (symbols) cs += '!@#$%^&*_+-=';
-  return randString(rng, len, cs);
+  return simulateHash(rng, hashing, raw);
 }
 
 // --- File names (realistic project patterns) ---
@@ -345,32 +363,70 @@ const TAGLINES = [
 
 export type Options = Record<string, unknown>;
 
+// --- String Formatter ---
+function applyCasing(str: string, casing?: string): string {
+  if (casing === 'lowercase') return str.toLowerCase();
+  if (casing === 'uppercase') return str.toUpperCase();
+  if (casing === 'capitalize') return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  return str;
+}
+
+// --- Date Formatter ---
+function formatDate(date: Date, format: string): string {
+  if (format === 'unix') return Math.floor(date.getTime() / 1000).toString();
+  if (format === 'sql') {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+  }
+  if (format === 'relative') {
+    const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diff < 60) return `${diff} seconds ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return `${Math.floor(diff / 86400)} days ago`;
+  }
+  return date.toISOString();
+}
+
 export function generateTypedValue(typeId: string, opts: Options, ctx: RowContext): unknown {
   const rng = ctx.rng;
   const regionData = P.REGION_DATA[ctx.region];
 
+  // Optional null/empty probability
+  if (opts.nullPercentage && typeof opts.nullPercentage === 'number' && opts.nullPercentage > 0) {
+    if (rng.next() < opts.nullPercentage / 100) return null;
+  }
+
   switch (typeId) {
     // ══════ PERSON ══════
-    case 'firstName': return ctx.firstName;
-    case 'lastName': return ctx.lastName;
+    case 'firstName': return applyCasing(ctx.firstName, opts.casing as string);
+    case 'lastName': return applyCasing(ctx.lastName, opts.casing as string);
     case 'fullName': {
-      if (opts.middleInitial) return `${ctx.firstName} ${String.fromCharCode(randInt(rng, 65, 90))}. ${ctx.lastName}`;
-      return `${ctx.firstName} ${ctx.lastName}`;
+      let name = `${ctx.firstName} ${ctx.lastName}`;
+      if (opts.middleInitial) name = `${ctx.firstName} ${String.fromCharCode(randInt(rng, 65, 90))}. ${ctx.lastName}`;
+      if (opts.includeTitle) name = `${rng.pick(['Mr.', 'Mrs.', 'Ms.', 'Dr.'])} ${name}`;
+      if (opts.includeSuffix) name = `${name} ${rng.pick(['Jr.', 'Sr.', 'II', 'III', 'PhD', 'MD'])}`;
+      return applyCasing(name, opts.casing as string);
     }
-    case 'email': return genEmail(ctx, opts.domain as string);
+    case 'email': return genEmail(ctx, opts.providerType as string, opts.domain as string);
     case 'username': return genUsername(ctx, (opts.format as string) || 'snake_case');
-    case 'phone': return Locale.generatePhone(ctx.country.code, opts.format as string);
+    case 'phone': {
+      let ph = Locale.generatePhone(ctx.country.code, opts.format as string);
+      if (opts.includeExtension) ph += ` x${randInt(rng, 100, 9999)}`;
+      return ph;
+    }
     case 'avatar': {
       const prov = opts.provider as string || 'dicebear';
+      const size = Number(opts.size) || 150;
       const seed = encodeURIComponent(`${ctx.firstName}${ctx.lastName}${randInt(rng, 1, 99)}`);
-      if (prov === 'robohash') return `https://robohash.org/${seed}.png?size=200x200&set=set4`;
-      if (prov === 'uifaces') return `https://i.pravatar.cc/150?u=${seed}`;
-      return `https://api.dicebear.com/8.x/avataaars/svg?seed=${seed}`;
+      if (prov === 'robohash') return `https://robohash.org/${seed}.png?size=${size}x${size}&set=set4`;
+      if (prov === 'uifaces') return `https://i.pravatar.cc/${size}?u=${seed}`;
+      return `https://api.dicebear.com/8.x/avataaars/svg?seed=${seed}&size=${size}`;
     }
     case 'gender': return ctx.gender === 'male' ? 'Male' : 'Female';
     case 'jobTitle': return rng.pick(P.JOB_TITLES);
     case 'bio': return genBio(ctx, (opts.length as string) || 'medium');
-    case 'password': return genPassword(rng, Number(opts.length) || 12, opts.symbols !== false, opts.numbers !== false);
+    case 'password': return genPassword(rng, Number(opts.length) || 12, opts.symbols !== false, opts.numbers !== false, opts.hashing as string);
     case 'age': return ctx.age;
 
     // ══════ LOCATION (geographically consistent via ctx) ══════
@@ -378,10 +434,20 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
       const num = randInt(rng, 1, 9999);
       const street = rng.pick(regionData.streets);
       const base = regionData.addressFormat(num, street);
-      if (opts.includeApt) return `${base}, Apt ${randInt(rng, 1, 500)}`;
-      return base;
+      const apt = opts.includeApt ? `Apt ${randInt(rng, 1, 500)}` : '';
+      const formatted = apt ? `${base}, ${apt}` : base;
+
+      if (opts.format === 'json') {
+        return JSON.stringify({
+          street: formatted,
+          city: ctx.city,
+          zip: Locale.generatePostalCode(ctx.country.code, '#####'),
+          country: ctx.country.code
+        });
+      }
+      return formatted;
     }
-    case 'city': return ctx.city;
+    case 'city': return opts.includeState ? `${ctx.city}, ${Locale.getState(ctx.country.code, 'abbreviation')}` : ctx.city;
     case 'state': return Locale.getState(ctx.country.code, (opts.format as string === 'abbreviation' ? 'abbreviation' : 'full'));
     case 'country': return ctx.country.name;
     case 'countryCode': return ctx.country.code;
@@ -392,10 +458,20 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     case 'timezone': return rng.pick(P.TIMEZONES);
 
     // ══════ FINANCE (Luhn-valid, country-specific) ══════
-    case 'amount': return randFloat(rng, Number(opts.min) || 0, Number(opts.max) || 10000, Number(opts.decimals) || 2);
+    case 'amount': {
+      let val = randFloat(rng, Number(opts.min) || 0, Number(opts.max) || 10000, Number(opts.decimals) || 2);
+      if (opts.allowNegative && rng.bool(0.3)) val = -val;
+      if (opts.formatAsString) {
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: Number(opts.decimals) || 2 }).format(val);
+      }
+      return val;
+    }
     case 'currencyCode': return ctx.currency.code;
     case 'currencyName': return ctx.currency.name;
-    case 'creditCard': return genCreditCard(rng, (opts.network as string) || 'any');
+    case 'creditCard': {
+      const cc = genCreditCard(rng, (opts.network as string) || 'any');
+      return opts.format === 'raw' ? cc.replace(/\s/g, '') : cc;
+    }
     case 'iban': return genIBAN(rng, (opts.country as string) || ctx.country.code);
     case 'bic': return genBIC(rng, ctx.country.code);
     case 'bitcoinAddress': return rng.bool() ? `bc1q${randString(rng, 38, BASE58.toLowerCase())}` : `3${randString(rng, 33, BASE58)}`;
@@ -432,7 +508,18 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     case 'catchPhrase': return rng.pick(TAGLINES);
 
     // ══════ INTERNET (context-aware, proper formats) ══════
-    case 'url': return genURL(ctx, (opts.protocol as string) || 'https');
+    case 'url': {
+      let url = genURL(ctx, (opts.protocol as string) || 'https');
+      if (opts.includePath && !url.includes('docs.')) {
+        const paths = ['/api/v1/users', '/dashboard/settings', '/app/onboarding', '/blog/latest'];
+        url += rng.pick(paths);
+      }
+      if (opts.includeQuery) {
+        const queries = ['?ref=tw', '?sort=desc&limit=10', '?utm_source=fb', '?q=search'];
+        url += rng.pick(queries);
+      }
+      return url;
+    }
     case 'domainName': return genDomain(rng, opts.tld as string);
     case 'ipv4': {
       const firsts = [23,34,45,52,54,64,72,91,104,108,142,151,162,172,185,192,203,216];
@@ -461,14 +548,19 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     case 'pastDate': {
       const yrs = Number(opts.yearsBack) || 1;
       const now = Date.now();
-      return realisticTimestamp(rng, now - yrs * 365.25 * 86400000, now).toISOString();
+      const d = realisticTimestamp(rng, now - yrs * 365.25 * 86400000, now);
+      return formatDate(d, opts.format as string);
     }
     case 'futureDate': {
       const yrs = Number(opts.yearsForward) || 1;
       const now = Date.now();
-      return realisticTimestamp(rng, now, now + yrs * 365.25 * 86400000).toISOString();
+      const d = realisticTimestamp(rng, now, now + yrs * 365.25 * 86400000);
+      return formatDate(d, opts.format as string);
     }
-    case 'recentDate': return realisticTimestamp(rng, Date.now() - 30 * 86400000, Date.now()).toISOString();
+    case 'recentDate': {
+      const d = realisticTimestamp(rng, Date.now() - 30 * 86400000, Date.now());
+      return formatDate(d, opts.format as string);
+    }
     case 'isoTimestamp': return realisticTimestamp(rng, Date.now() - 365 * 86400000, Date.now()).toISOString();
     case 'unixTimestamp': {
       const d = realisticTimestamp(rng, Date.now() - 365 * 86400000, Date.now());
@@ -499,8 +591,8 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     case 'alphanumeric': return randString(rng, Number(opts.length) || 10, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789');
 
     // ══════ NUMBERS ══════
-    case 'integer': return randInt(rng, Number(opts.min) ?? 0, Number(opts.max) ?? 10000);
-    case 'float': return randFloat(rng, Number(opts.min) ?? 0, Number(opts.max) ?? 100, Number(opts.precision) ?? 2);
+    case 'integer': return randInt(rng, Number(opts.min ?? 0), Number(opts.max ?? 10000));
+    case 'float': return randFloat(rng, Number(opts.min ?? 0), Number(opts.max ?? 100), Number(opts.precision ?? 2));
     case 'percentage': return opts.format === '0.0-1.0' ? randFloat(rng, 0, 1, 4) : randInt(rng, 0, 100);
     case 'rating': return opts.halfStars ? rng.pick([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) : rng.weighted([1,2,3,4,5], [5, 10, 20, 35, 30]);
     case 'salary': {
@@ -515,9 +607,20 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     }
 
     // ══════ TEXT (smart sentences via intelligence module) ══════
-    case 'sentence': return Intel.smartSentence(rng);
-    case 'paragraph': return Intel.smartParagraph(rng, Number(opts.minSentences) || 3, Number(opts.maxSentences) || 6);
-    case 'word': return rng.pick(Intel.S_NOUNS);
+    case 'sentence': {
+      let text = Intel.smartSentence(rng);
+      if (opts.sentiment === 'positive') text = `I absolutely love this. ${text} Highly recommended!`;
+      if (opts.sentiment === 'negative') text = `Terrible experience. ${text} Would not buy again.`;
+      return applyCasing(text, opts.casing as string);
+    }
+    case 'paragraph': {
+      let text = Intel.smartParagraph(rng, Number(opts.minSentences) || 3, Number(opts.maxSentences) || 6);
+      if (opts.sentiment === 'positive') text = `Outstanding quality and perfect design. ${text} Exceeded all my expectations entirely.`;
+      if (opts.sentiment === 'negative') text = `Very disappointing and poorly made. ${text} The support was unhelpful and it broke quickly.`;
+      text = applyCasing(text, opts.casing as string);
+      return opts.htmlWrap ? `<p>${text}</p>` : text;
+    }
+    case 'word': return applyCasing(rng.pick(Intel.S_NOUNS), opts.casing as string);
     case 'slug': {
       const wc = Number(opts.wordCount) || 3;
       return Array.from({ length: wc }, () => rng.pick(Intel.S_NOUNS)).join('-').replace(/\s/g, '-').toLowerCase();
@@ -555,7 +658,10 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     case 'gasPrice': return randInt(rng, Number(opts.min) || 15, Number(opts.max) || 150);
 
     // ══════ SYSTEM / FILES (realistic project files) ══════
-    case 'fileName': return genFileName(rng);
+    case 'fileName': {
+      const extType = (opts.extensionType as string) || 'any';
+      return `${rng.pick(FILE_NAMES)}${rng.pick(FILE_SUFFIXES)}.${rng.pick(P.FILE_EXTENSIONS[extType] || P.FILE_EXTENSIONS.any)}`;
+    }
     case 'fileExtension': return rng.pick(P.FILE_EXTENSIONS[(opts.type as string) || 'any'] || P.FILE_EXTENSIONS.any);
     case 'mimeType': return rng.pick(P.MIME_TYPES);
     case 'filePath': {
@@ -572,6 +678,44 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
       const major = rng.weighted([0, 1, 2, 3, 4, 5], [10, 35, 25, 15, 10, 5]);
       return `${prefix}${major}.${randInt(rng, 0, 20)}.${randInt(rng, 0, 50)}`;
     }
+
+    // ══════ NEW DOMAINS (AVIATION & TECH & CUSTOMIZATIONS) ══════
+    case 'airportCode': return rng.pick(Aviation.AIRPORTS).code;
+    case 'airportName': {
+      const includeCity = Boolean(opts.includeCity);
+      const ap = rng.pick(Aviation.AIRPORTS);
+      return includeCity ? `${ap.name} (${ap.city})` : ap.name;
+    }
+    case 'airline': return rng.pick(Aviation.AIRLINES).name;
+    case 'cryptoNetwork': {
+      const net = rng.pick(Tech.CRYPTO_NETWORKS);
+      const name = rng.bool(0.15) ? net.short : net.name;
+      return applyCasing(name, opts.casing as string);
+    }
+    case 'techDevice': {
+      const dev = rng.pick(Tech.TECH_DEVICES);
+      const name = rng.bool(0.15) ? dev.short : dev.name;
+      return applyCasing(name, opts.casing as string);
+    }
+    case 'techOS': {
+      const os = rng.pick(Tech.TECH_OS);
+      return rng.bool(0.15) ? os.short : os.name;
+    }
+    case 'appBundleId': {
+      const comp = ctx.company.toLowerCase().replace(/[^a-z]/g, '');
+      const appName = rng.pick(Intel.S_NOUNS).toLowerCase().replace(/[^a-z]/g, '');
+      const prefix = opts.prefix as string || 'com';
+      return `${prefix}.${comp}.${appName}`;
+    }
+
+    
+    // ══════ HEALTH ══════
+    case 'hospitalName': return rng.pick(Health.HOSPITALS).name;
+    case 'icd10Diagnosis': {
+      const diag = rng.pick(Health.DIAGNOSES_ICD10);
+      return opts.format === 'long' ? diag.descLong : (opts.format === 'short' ? diag.descShort : diag.code);
+    }
+    case 'drugName': return opts.brandName ? rng.pick(Health.DRUGS_BRAND) : rng.pick(Health.DRUGS_GENERIC);
 
     default: return `${ctx.firstName.toLowerCase()}_${randInt(rng, 1, 9999)}`;
   }

@@ -17,3 +17,14 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// Prevent number inputs from changing value when scrolling outside of them
+document.addEventListener('wheel', (e) => {
+  if (
+    document.activeElement?.tagName === 'INPUT' && 
+    (document.activeElement as HTMLInputElement).type === 'number' && 
+    e.target !== document.activeElement
+  ) {
+    (document.activeElement as HTMLElement).blur();
+  }
+}, { passive: true });

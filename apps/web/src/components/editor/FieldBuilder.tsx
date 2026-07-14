@@ -301,7 +301,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 pb-5" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex-1 overflow-y-auto px-5 pb-5">
               {filteredTypes ? (
                 // Filtered search results
                 <div className="space-y-1 pt-4">
@@ -461,9 +461,9 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                     {typeDef && typeDef.options.length > 0 && (
                       <div className="pt-6 border-t border-border-subtle/50">
                         <h4 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-4">Type Options</h4>
-                        <div className="space-y-5">
+                        <div className="space-y-3">
                           {typeDef.options.map((opt) => (
-                            <div key={opt.key} className="flex flex-col gap-2">
+                            <div key={opt.key} className={opt.type === 'boolean' ? "flex items-center justify-between py-1" : "flex flex-col gap-2"}>
                               <label className="text-sm font-medium text-text-primary">{opt.label}</label>
 
                               {opt.type === 'select' && (
@@ -473,7 +473,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                                   className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary focus:border-accent focus:outline-none transition-all duration-200 appearance-none"
                                 >
                                   {opt.choices?.map((c) => (
-                                    <option key={c} value={c}>{c}</option>
+                                    <option key={c} value={c} className="bg-bg-tertiary text-text-primary">{c}</option>
                                   ))}
                                 </select>
                               )}

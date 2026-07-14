@@ -21,7 +21,7 @@ export function StepIndicator() {
   };
 
   return (
-    <div className="flex justify-center items-center gap-1 sm:gap-2 px-6 py-4 border-b border-border-subtle bg-bg-secondary/80 backdrop-blur-sm sticky top-0 z-40">
+    <div className="flex justify-center items-center gap-1 sm:gap-2">
       {STEPS.map((s, idx) => {
         const isActive = s.id === step;
         const isCompleted = idx < currentIdx;

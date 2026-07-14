@@ -1,10 +1,10 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { StepIndicator } from '@/components/layout/StepIndicator';
+
 import { SchemaEditor } from '@/components/editor/SchemaEditor';
 import { ColumnList } from '@/components/builder/ColumnList';
-import { PreviewTable } from '@/components/preview/PreviewTable';
+import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
 import { ExportPanel } from '@/components/export/ExportPanel';
 import { ToastContainer } from '@/components/shared/Toast';
 import { useSchemaStore } from '@/store/schemaStore';
@@ -19,9 +19,10 @@ import type { FieldDef } from '@/workers/generation.worker';
 function App() {
   const { parsedSchema, parseError } = useSchemaStore();
   const chaosStore = useChaosStore();
+
   const { step, setStep, goBack } = useAppStore();
   const multiTable = useMultiTableStore();
-  const { generate, rows, isGenerating, progress, error } = useWorker();
+  const { generate, rows, isGenerating } = useWorker();
   const [rowCount, setRowCount] = useState(1000);
   const fieldsRef = useRef<FieldRow[]>([]);
   const lastFieldDefsRef = useRef<FieldDef[]>([]);
@@ -40,6 +41,7 @@ function App() {
 
   const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0 || hasManualFields;
   const tableName = parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
+
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
     fieldsRef.current = fields;
@@ -109,7 +111,6 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <Navbar />
-      <StepIndicator />
       <ToastContainer />
 
       <main className="flex flex-1 flex-col overflow-hidden">
@@ -264,13 +265,8 @@ function App() {
               </button>
             </aside>
 
-            <section className="flex flex-1 flex-col p-5">
-              <PreviewTable
-                rows={rows}
-                isGenerating={isGenerating}
-                progress={progress}
-                error={error}
-              />
+            <section className="flex flex-1 flex-col overflow-hidden relative">
+              <PreviewCanvas />
             </section>
           </div>
         )}

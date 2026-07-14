@@ -18,7 +18,7 @@ export function generateValue(
   }
 
   // Quick mapping from fakerMethod to local typeId
-  let typeId = 'string';
+  let typeId: string;
   const opts: Record<string, unknown> = {};
 
   switch (fakerMethod) {

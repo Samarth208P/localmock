@@ -112,7 +112,7 @@ export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
           <button
             key={template.name}
             onClick={() => handleSelect(template)}
-            className="relative group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-200 hover:border-accent/40 hover:bg-accent/[0.03] hover:-translate-y-0.5 hover:shadow-sm"
+            className="relative group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-200 hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-sm"
           >
             {template.description === 'Saved Custom Template' && (
               <div className="absolute top-4 right-4">

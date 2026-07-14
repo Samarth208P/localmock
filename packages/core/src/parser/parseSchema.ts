@@ -27,7 +27,7 @@ export function parseSchema(input: string): ParseResult {
         return { format, tables: parseRust(input), errors };
       case 'sql':
         return { format, tables: parseSQL(input), errors };
-      default:
+      default: {
         // Try a generic fallback: treat as key-type pairs
         const fallback = parseGenericKeyValue(input);
         if (fallback.length > 0) {
@@ -35,6 +35,7 @@ export function parseSchema(input: string): ParseResult {
         }
         errors.push('Could not detect schema format. Try TypeScript, Prisma, JSON, Go, Python, Rust, or SQL.');
         return { format: 'unknown', tables: [], errors };
+      }
     }
   } catch (err) {
     errors.push(`Parse error: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -135,13 +136,13 @@ function parsePrismaBody(tableName: string, body: string) {
 
     const [, fieldName, prismaType, , decorators = ''] = fieldMatch;
 
-    const relationMatch = decorators.match(/@relation\(.*?references:\s*\[(\w+)\].*?\)/);
+    const relationMatch = decorators.match(/@relation\(.*?fields:\s*\[(\w+)\].*?references:\s*\[(\w+)\].*?\)/);
     if (relationMatch) {
       relations.push({
         fromTable: tableName,
-        fromField: fieldName,
+        fromField: relationMatch[1],
         toTable: prismaType,
-        toField: relationMatch[1],
+        toField: relationMatch[2],
         cardinality: '1:N',
       });
       continue;
@@ -174,22 +175,23 @@ function parseGo(input: string): ParsedTable[] {
   while ((match = structRegex.exec(input)) !== null) {
     const name = match[1];
     const body = match[2];
-    const fields = parseGoBody(body);
-    tables.push({ name, fields, relations: [] });
+    const { fields, relations } = parseGoBody(name, body);
+    tables.push({ name, fields, relations });
   }
 
   return tables;
 }
 
-function parseGoBody(body: string) {
+function parseGoBody(tableName: string, body: string) {
   const lines = body.split('\n').filter((l) => l.trim());
+  const fields: ReturnType<typeof classifyField>[] = [];
+  const relations: RelationEdge[] = [];
 
-  return lines
-    .map((line) => {
+  for (const line of lines) {
       const trimmed = line.trim();
       // Go field: FieldName Type `json:"field_name"`
       const fieldMatch = trimmed.match(/^(\w+)\s+(\S+)/);
-      if (!fieldMatch) return null;
+      if (!fieldMatch) continue;
 
       const [, name, goType] = fieldMatch;
       const typeMap: Record<string, string> = {
@@ -202,10 +204,24 @@ function parseGoBody(body: string) {
       const jsonTag = trimmed.match(/`json:"(\w+)/);
       const fieldName = jsonTag ? jsonTag[1] : name.charAt(0).toLowerCase() + name.slice(1);
 
+      // Extract gorm foreign key
+      const gormTag = trimmed.match(/`gorm:".*?foreignKey:(\w+)/);
+      if (gormTag) {
+        relations.push({
+          fromTable: tableName,
+          fromField: gormTag[1],
+          toTable: goType,
+          toField: 'id', // Default assumption for Go
+          cardinality: '1:N',
+        });
+        continue;
+      }
+
       const typeHint = typeMap[goType] || 'string';
-      return classifyField(fieldName, typeHint);
-    })
-    .filter(Boolean) as ReturnType<typeof classifyField>[];
+      fields.push(classifyField(fieldName, typeHint));
+  }
+
+  return { fields, relations };
 }
 
 // --- Python ---
@@ -220,38 +236,54 @@ function parsePython(input: string): ParsedTable[] {
   while ((match = classRegex.exec(input)) !== null) {
     const name = match[1];
     const body = match[2];
-    const fields = parsePythonBody(body);
+    const { fields, relations } = parsePythonBody(name, body);
     if (fields.length > 0) {
-      tables.push({ name, fields, relations: [] });
+      tables.push({ name, fields, relations });
     }
   }
 
   return tables;
 }
 
-function parsePythonBody(body: string) {
+function parsePythonBody(tableName: string, body: string) {
   const lines = body.split('\n').filter((l) => l.trim());
+  const fields: ReturnType<typeof classifyField>[] = [];
+  const relations: RelationEdge[] = [];
 
-  return lines
-    .map((line) => {
+  for (const line of lines) {
       const trimmed = line.trim();
+
+      // Check for SQLAlchemy ForeignKey
+      const fkMatch = trimmed.match(/^(\w+)\s*=\s*Column\(.*?ForeignKey\(['"]([^.]+)[.](\w+)['"]\)/);
+      if (fkMatch) {
+        relations.push({
+          fromTable: tableName,
+          fromField: fkMatch[1],
+          toTable: fkMatch[2],
+          toField: fkMatch[3],
+          cardinality: '1:N',
+        });
+      }
+
       // Python type hint: field_name: Type or field_name: Type = default
-      const fieldMatch = trimmed.match(/^(\w+)\s*:\s*(\w+)/);
-      if (!fieldMatch) return null;
+      const fieldMatch = trimmed.match(/^(\w+)\s*:\s*(\w+)/) || trimmed.match(/^(\w+)\s*=\s*Column\((\w+)/);
+      if (!fieldMatch) continue;
 
       const [, name, pyType] = fieldMatch;
-      if (name.startsWith('_') || name === 'class') return null;
+      if (name.startsWith('_') || name === 'class') continue;
 
       const typeMap: Record<string, string> = {
         str: 'string', int: 'number', float: 'number', bool: 'boolean',
         datetime: 'date', Optional: 'string', List: 'string', Dict: 'string',
         UUID: 'string', Decimal: 'number',
+        String: 'string', Integer: 'number', Float: 'number', Boolean: 'boolean', DateTime: 'date',
       };
 
       const typeHint = typeMap[pyType] || 'string';
-      return classifyField(name, typeHint);
-    })
-    .filter(Boolean) as ReturnType<typeof classifyField>[];
+      fields.push(classifyField(name, typeHint));
+  }
+
+  return { fields, relations };
 }
 
 // --- Rust ---
@@ -264,21 +296,34 @@ function parseRust(input: string): ParsedTable[] {
   while ((match = structRegex.exec(input)) !== null) {
     const name = match[2];
     const body = match[3];
-    const fields = parseRustBody(body);
-    tables.push({ name, fields, relations: [] });
+    const { fields, relations } = parseRustBody(name, body);
+    tables.push({ name, fields, relations });
   }
 
   return tables;
 }
 
-function parseRustBody(body: string) {
+function parseRustBody(tableName: string, body: string) {
   const lines = body.split(',').map((l) => l.trim()).filter(Boolean);
+  const fields: ReturnType<typeof classifyField>[] = [];
+  const relations: RelationEdge[] = [];
 
-  return lines
-    .map((line) => {
+  for (const line of lines) {
+      // Check for Diesel belongs_to
+      const dieselMatch = line.match(/#\[diesel\(belongs_to\((\w+)(?:,\s*foreign_key\s*=\s*(\w+))?\)\)\]/);
+      if (dieselMatch) {
+        relations.push({
+          fromTable: tableName,
+          fromField: dieselMatch[2] || `${dieselMatch[1].toLowerCase()}_id`,
+          toTable: dieselMatch[1],
+          toField: 'id',
+          cardinality: '1:N',
+        });
+      }
+
       // pub field_name: Type
       const fieldMatch = line.match(/(?:pub\s+)?(\w+)\s*:\s*(\S+)/);
-      if (!fieldMatch) return null;
+      if (!fieldMatch) continue;
 
       const [, name, rustType] = fieldMatch;
       const typeMap: Record<string, string> = {
@@ -291,40 +336,84 @@ function parseRustBody(body: string) {
       // Clean generic wrappers: Option<String> -> String
       const cleanType = rustType.replace(/Option<(.+)>/, '$1').replace(/Vec<(.+)>/, '$1');
       const typeHint = typeMap[cleanType] || 'string';
-      return classifyField(name, typeHint);
-    })
-    .filter(Boolean) as ReturnType<typeof classifyField>[];
+      fields.push(classifyField(name, typeHint));
+  }
+
+  return { fields, relations };
 }
 
 // --- SQL CREATE TABLE ---
 
 function parseSQL(input: string): ParsedTable[] {
   const tables: ParsedTable[] = [];
-  const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"']?(\w+)[`"']?\s*\(([^)]+)\)/gi;
+  const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"']?(\w+)[`"']?\s*\(([\s\S]*?)\)(?=\s*(?:;|$|CREATE\s+TABLE))/gi;
   let match: RegExpExecArray | null;
 
   while ((match = tableRegex.exec(input)) !== null) {
     const name = match[1];
     const body = match[2];
-    const fields = parseSQLBody(body);
-    tables.push({ name, fields, relations: [] });
+    const { fields, relations } = parseSQLBody(name, body);
+    tables.push({ name, fields, relations });
   }
 
   return tables;
 }
 
-function parseSQLBody(body: string) {
-  const lines = body.split(',').map((l) => l.trim()).filter(Boolean);
+function parseSQLBody(tableName: string, body: string) {
+  const lines: string[] = [];
+  let current = '';
+  let depth = 0;
+  
+  for (let i = 0; i < body.length; i++) {
+    const char = body[i];
+    if (char === '(') depth++;
+    else if (char === ')') depth--;
+    else if (char === ',' && depth === 0) {
+      lines.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  if (current.trim()) lines.push(current.trim());
 
-  return lines
-    .map((line) => {
-      // Skip constraints
-      if (/^\s*(PRIMARY|FOREIGN|UNIQUE|INDEX|KEY|CONSTRAINT|CHECK)/i.test(line)) return null;
+  const fields: ReturnType<typeof classifyField>[] = [];
+  const relations: RelationEdge[] = [];
+
+  for (const line of lines) {
+      // Explicit Constraints: FOREIGN KEY (col) REFERENCES table(col)
+      const explicitFkMatch = line.match(/FOREIGN\s+KEY\s*\(([\w\s,]+)\)\s*REFERENCES\s*(\w+)\s*\(([\w\s,]+)\)/i);
+      if (explicitFkMatch) {
+        relations.push({
+          fromTable: tableName,
+          fromField: explicitFkMatch[1].trim(),
+          toTable: explicitFkMatch[2],
+          toField: explicitFkMatch[3].trim(),
+          cardinality: '1:N',
+        });
+        continue;
+      }
+
+      // Skip other constraints on their own lines
+      if (/^\s*(PRIMARY|UNIQUE|INDEX|KEY|CONSTRAINT|CHECK)/i.test(line)) continue;
 
       const fieldMatch = line.match(/[`"']?(\w+)[`"']?\s+(\w+)/);
-      if (!fieldMatch) return null;
+      if (!fieldMatch) continue;
 
       const [, name, sqlType] = fieldMatch;
+
+      // Inline Constraints: field INT REFERENCES table(col)
+      const inlineFkMatch = line.match(/REFERENCES\s+(\w+)\s*\(([\w\s,]+)\)/i);
+      if (inlineFkMatch) {
+        relations.push({
+          fromTable: tableName,
+          fromField: name,
+          toTable: inlineFkMatch[1],
+          toField: inlineFkMatch[2].trim(),
+          cardinality: '1:N',
+        });
+      }
+
       const upper = sqlType.toUpperCase();
 
       let typeHint = 'string';
@@ -334,9 +423,10 @@ function parseSQLBody(body: string) {
       else if (['DATE', 'DATETIME', 'TIMESTAMP', 'TIMESTAMPTZ'].includes(upper)) typeHint = 'date';
       else if (['UUID'].includes(upper)) typeHint = 'string';
 
-      return classifyField(name, typeHint);
-    })
-    .filter(Boolean) as ReturnType<typeof classifyField>[];
+      fields.push(classifyField(name, typeHint));
+  }
+
+  return { fields, relations };
 }
 
 // --- Generic fallback: key-value pairs ---

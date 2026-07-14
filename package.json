@@ -18,7 +18,10 @@
     "build:web": "turbo build --filter=@localmock/web"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^9.15.0",
     "turbo": "^2.4.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.64.0"
   }
 }

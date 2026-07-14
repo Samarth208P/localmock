@@ -252,7 +252,7 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
                 onClick={onGenerate}
                 className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
               >
-                <span className="whitespace-nowrap">Configure & Generate</span>
+                <span className="whitespace-nowrap">Configure</span>
                 <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
             </div>

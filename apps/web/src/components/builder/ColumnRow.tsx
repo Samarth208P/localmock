@@ -58,7 +58,7 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
         aria-label={`Data type for ${column.name}`}
       >
         {TYPE_OPTIONS.map((opt) => (
-          <option key={opt.type} value={opt.type}>
+          <option key={opt.type} value={opt.type} className="bg-bg-tertiary text-text-primary">
             {opt.label}
           </option>
         ))}

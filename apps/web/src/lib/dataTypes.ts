@@ -46,22 +46,29 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'firstName', label: 'First Name', category: 'person', uniquePool: 2000,
         options: [
           { key: 'gender', label: 'Gender', type: 'select', default: 'any', choices: ['any', 'male', 'female'] },
+          { key: 'casing', label: 'Casing', type: 'select', default: 'normal', choices: ['normal', 'lowercase', 'uppercase'] },
         ],
       },
       {
         id: 'lastName', label: 'Last Name', category: 'person', uniquePool: 1500,
-        options: [],
+        options: [
+          { key: 'casing', label: 'Casing', type: 'select', default: 'normal', choices: ['normal', 'lowercase', 'uppercase'] },
+        ],
       },
       {
         id: 'fullName', label: 'Full Name', category: 'person', uniquePool: 3000000,
         options: [
           { key: 'middleInitial', label: 'Include Middle Initial', type: 'boolean', default: false },
+          { key: 'includeTitle', label: 'Include Title (e.g. Dr.)', type: 'boolean', default: false },
+          { key: 'includeSuffix', label: 'Include Suffix (e.g. Jr.)', type: 'boolean', default: false },
+          { key: 'casing', label: 'Casing', type: 'select', default: 'normal', choices: ['normal', 'lowercase', 'uppercase'] },
         ],
       },
       {
         id: 'email', label: 'Email', category: 'person', uniquePool: Infinity,
         options: [
-          { key: 'domain', label: 'Domain', type: 'text', default: '', placeholder: 'Random or e.g. @acme.com' },
+          { key: 'providerType', label: 'Provider Type', type: 'select', default: 'any', choices: ['any', 'freemail', 'corporate', 'disposable'] },
+          { key: 'domain', label: 'Custom Domain', type: 'text', default: '', placeholder: 'Overrides provider type' },
         ],
       },
       {
@@ -74,12 +81,14 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'phone', label: 'Phone Number', category: 'person', uniquePool: Infinity,
         options: [
           { key: 'format', label: 'Format', type: 'text', default: '+1 (###) ###-####', placeholder: '+1 (###) ###-####' },
+          { key: 'includeExtension', label: 'Include Extension', type: 'boolean', default: false },
         ],
       },
       {
         id: 'avatar', label: 'Avatar URL', category: 'person', uniquePool: Infinity,
         options: [
           { key: 'provider', label: 'Provider', type: 'select', default: 'dicebear', choices: ['dicebear', 'robohash', 'uifaces'] },
+          { key: 'size', label: 'Size (px)', type: 'number', default: 150, min: 50, max: 1000 },
         ],
       },
       {
@@ -102,6 +111,7 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
           { key: 'length', label: 'Length', type: 'number', default: 12, min: 6, max: 64 },
           { key: 'symbols', label: 'Include Symbols', type: 'boolean', default: true },
           { key: 'numbers', label: 'Include Numbers', type: 'boolean', default: true },
+          { key: 'hashing', label: 'Hashing', type: 'select', default: 'raw', choices: ['raw', 'bcrypt', 'sha256'] },
         ],
       },
     ],
@@ -116,11 +126,14 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'street', label: 'Street Address', category: 'location', uniquePool: Infinity,
         options: [
           { key: 'includeApt', label: 'Include Apt/Suite', type: 'boolean', default: false },
+          { key: 'format', label: 'Format', type: 'select', default: 'string', choices: ['string', 'json'] },
         ],
       },
       {
         id: 'city', label: 'City', category: 'location', uniquePool: 500,
-        options: [],
+        options: [
+          { key: 'includeState', label: 'Include State', type: 'boolean', default: false },
+        ],
       },
       {
         id: 'state', label: 'State / Region', category: 'location', uniquePool: 200,
@@ -172,6 +185,8 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
           { key: 'min', label: 'Min', type: 'number', default: 0, min: 0, max: 1000000 },
           { key: 'max', label: 'Max', type: 'number', default: 10000, min: 0, max: 1000000 },
           { key: 'decimals', label: 'Decimals', type: 'number', default: 2, min: 0, max: 6 },
+          { key: 'allowNegative', label: 'Allow Negative', type: 'boolean', default: false },
+          { key: 'formatAsString', label: 'Format As String', type: 'boolean', default: false },
         ],
       },
       {
@@ -186,6 +201,7 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'creditCard', label: 'Credit Card Number', category: 'finance', uniquePool: Infinity,
         options: [
           { key: 'network', label: 'Network', type: 'select', default: 'any', choices: ['any', 'visa', 'mastercard', 'amex'] },
+          { key: 'format', label: 'Format', type: 'select', default: 'formatted', choices: ['formatted', 'raw'] },
         ],
       },
       {
@@ -258,6 +274,8 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'url', label: 'URL', category: 'internet', uniquePool: Infinity,
         options: [
           { key: 'protocol', label: 'Protocol', type: 'select', default: 'https', choices: ['https', 'http'] },
+          { key: 'includePath', label: 'Include Path', type: 'boolean', default: false },
+          { key: 'includeQuery', label: 'Include Query Params', type: 'boolean', default: false },
         ],
       },
       {
@@ -304,17 +322,21 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         id: 'pastDate', label: 'Past Date', category: 'datetime', uniquePool: Infinity,
         options: [
           { key: 'yearsBack', label: 'Years Back', type: 'number', default: 1, min: 1, max: 50 },
+          { key: 'format', label: 'Format', type: 'select', default: 'iso', choices: ['iso', 'unix', 'sql', 'relative'] },
         ],
       },
       {
         id: 'futureDate', label: 'Future Date', category: 'datetime', uniquePool: Infinity,
         options: [
           { key: 'yearsForward', label: 'Years Forward', type: 'number', default: 1, min: 1, max: 50 },
+          { key: 'format', label: 'Format', type: 'select', default: 'iso', choices: ['iso', 'unix', 'sql', 'relative'] },
         ],
       },
       {
         id: 'recentDate', label: 'Recent Date (30 days)', category: 'datetime', uniquePool: Infinity,
-        options: [],
+        options: [
+          { key: 'format', label: 'Format', type: 'select', default: 'iso', choices: ['iso', 'unix', 'sql', 'relative'] },
+        ],
       },
       {
         id: 'isoTimestamp', label: 'ISO Timestamp', category: 'datetime', uniquePool: Infinity,
@@ -428,6 +450,8 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         options: [
           { key: 'minWords', label: 'Min Words', type: 'number', default: 5, min: 2, max: 30 },
           { key: 'maxWords', label: 'Max Words', type: 'number', default: 15, min: 3, max: 50 },
+          { key: 'casing', label: 'Casing', type: 'select', default: 'sentence', choices: ['sentence', 'lowercase', 'uppercase'] },
+          { key: 'sentiment', label: 'Sentiment', type: 'select', default: 'any', choices: ['any', 'positive', 'negative'] },
         ],
       },
       {
@@ -435,11 +459,16 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
         options: [
           { key: 'minSentences', label: 'Min Sentences', type: 'number', default: 3, min: 1, max: 10 },
           { key: 'maxSentences', label: 'Max Sentences', type: 'number', default: 7, min: 2, max: 20 },
+          { key: 'casing', label: 'Casing', type: 'select', default: 'sentence', choices: ['sentence', 'lowercase', 'uppercase'] },
+          { key: 'htmlWrap', label: 'HTML Wrap', type: 'boolean', default: false },
+          { key: 'sentiment', label: 'Sentiment', type: 'select', default: 'any', choices: ['any', 'positive', 'negative'] },
         ],
       },
       {
         id: 'word', label: 'Word', category: 'text', uniquePool: 500,
-        options: [],
+        options: [
+          { key: 'casing', label: 'Casing', type: 'select', default: 'lowercase', choices: ['lowercase', 'uppercase', 'capitalize'] },
+        ],
       },
       {
         id: 'slug', label: 'URL Slug', category: 'text', uniquePool: Infinity,
@@ -529,7 +558,9 @@ export const DATA_TYPE_CATEGORIES: DataTypeCategory[] = [
     types: [
       {
         id: 'fileName', label: 'File Name', category: 'system', uniquePool: Infinity,
-        options: [],
+        options: [
+          { key: 'extensionType', label: 'Extension Type', type: 'select', default: 'any', choices: ['any', 'image', 'document', 'code'] },
+        ],
       },
       {
         id: 'fileExtension', label: 'File Extension', category: 'system', uniquePool: 20,

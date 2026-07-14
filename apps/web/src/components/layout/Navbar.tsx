@@ -1,4 +1,5 @@
 import { AnimatedLogo } from '@/components/shared/AnimatedLogo';
+import { StepIndicator } from '@/components/layout/StepIndicator';
 import { useEffect } from 'react';
 
 export function Navbar() {
@@ -24,13 +25,17 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
+      <div className="flex items-center gap-3 lg:w-[200px]">
         <AnimatedLogo />
-        <span className="text-lg font-semibold text-text-primary">LocalMock</span>
+        <span className="text-lg font-semibold text-text-primary hidden lg:block">LocalMock</span>
       </div>
 
-      <nav className="flex items-center gap-4">
+      <div className="flex-1 flex justify-center overflow-x-auto no-scrollbar">
+        <StepIndicator />
+      </div>
+
+      <nav className="flex items-center gap-4 lg:w-[200px] justify-end">
         <a
           href="https://buymeacoffee.com/samarth208p"
           target="_blank"
