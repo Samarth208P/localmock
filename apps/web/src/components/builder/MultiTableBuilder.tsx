@@ -188,7 +188,7 @@ export function MultiTableBuilder() {
               setNewTableName('users');
               setIsCreateModalOpen(true);
             }}
-            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-200 hover:bg-accent-hover hover:-translate-y-0.5 active:scale-95"
+            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-accent-hover"
           >
             + Create First Table
           </button>
@@ -197,9 +197,9 @@ export function MultiTableBuilder() {
 
       {/* Create Table Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/60 animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-lg flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-border-subtle">
@@ -218,7 +218,7 @@ export function MultiTableBuilder() {
                   type="text"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-all duration-200"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && newTableName.trim()) {
@@ -243,7 +243,7 @@ export function MultiTableBuilder() {
                     }
                   }}
                   disabled={!newTableName.trim()}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   Create
                 </button>

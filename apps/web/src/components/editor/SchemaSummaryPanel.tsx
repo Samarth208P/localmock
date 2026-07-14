@@ -10,22 +10,6 @@ interface SchemaSummaryPanelProps {
   onRestoreHistory?: (fields: FieldRow[]) => void;
 }
 
-/** Very rough placeholder value per inferred type — cosmetic only, not the real generator. */
-function sampleValueFor(type: string): string {
-  const t = type.toLowerCase();
-  if (t.includes('email')) return 'jane@example.com';
-  if (t.includes('uuid') || t.includes('id')) return 'a1b2c3d4-...';
-  if (t.includes('bool')) return 'true';
-  if (t.includes('date') || t.includes('time')) return '2024-03-11';
-  if (t.includes('phone')) return '+1 555-0182';
-  if (t.includes('url') || t.includes('link') || t.includes('website')) return 'https://example.com';
-  if (t.includes('name')) return 'Jane Doe';
-  if (t.includes('address') || t.includes('city') || t.includes('country')) return '123 Main St';
-  if (t.includes('num') || t.includes('int') || t.includes('float') || t.includes('price') || t.includes('amount')) return '482';
-  if (t.includes('string') || t.includes('sentence') || t.includes('text') || t.includes('word')) return 'Lorem ipsum';
-  return '—';
-}
-
 function formatTime(ts: number): string {
   const diff = Date.now() - ts;
   if (diff < 60_000) return 'Just now';
@@ -61,18 +45,6 @@ export function SchemaSummaryPanel({ fields, onRestoreHistory }: SchemaSummaryPa
   }, [parsedSchema, fields]);
 
   const tableCount = parsedSchema?.tables?.length || (columns.length > 0 ? 1 : 0);
-
-  const distinctTypes = useMemo(() => {
-    const seen = new Set<string>();
-    for (const c of columns) {
-      if (c.type) seen.add(c.type);
-      if (seen.size >= 8) break;
-    }
-    return Array.from(seen).slice(0, 8);
-  }, [columns]);
-
-  const previewColumns = columns.slice(0, 3);
-  const previewRows = previewColumns.length > 0 ? [0, 1, 2] : [];
 
   const handleDelete = async (id: string) => {
     await deleteFromHistory(id);
@@ -120,49 +92,22 @@ export function SchemaSummaryPanel({ fields, onRestoreHistory }: SchemaSummaryPa
               )}
             </div>
 
-            {distinctTypes.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[11px] font-medium text-text-muted">Detected types</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {distinctTypes.map((type) => (
-                    <span
-                      key={type}
-                      className="inline-flex items-center rounded-md border border-border-subtle bg-bg-tertiary px-2 py-0.5 text-[10px] font-mono text-text-secondary"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {previewColumns.length > 0 && (
+            {columns.length > 0 && (
               <div>
-                <p className="mb-2 text-[11px] font-medium text-text-muted">Live preview</p>
-                <div className="overflow-x-auto rounded-lg border border-border-subtle">
-                  <table className="w-full text-[11px]">
-                    <thead>
-                      <tr className="border-b border-border-subtle bg-bg-tertiary/50">
-                        {previewColumns.map((c) => (
-                          <th key={c.name} className="px-2.5 py-1.5 text-left font-medium text-text-secondary truncate max-w-[100px]">
-                            {c.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((rowIdx) => (
-                        <tr key={rowIdx} className={rowIdx !== previewRows.length - 1 ? 'border-b border-border-subtle/50' : ''}>
-                          {previewColumns.map((c) => (
-                            <td key={c.name} className="px-2.5 py-1.5 font-mono text-text-muted truncate max-w-[100px]">
-                              {sampleValueFor(c.type)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <p className="mb-2 text-[11px] font-medium text-text-muted">Fields</p>
+                <ul className="max-h-[280px] overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
+                  {columns.map((c, idx) => (
+                    <li
+                      key={`${c.name}-${idx}`}
+                      className="flex items-center justify-between gap-3 px-2.5 py-1.5 text-[11px]"
+                    >
+                      <span className="font-mono text-text-primary truncate">{c.name || '—'}</span>
+                      <span className="shrink-0 rounded border border-border-subtle bg-bg-tertiary px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
+                        {c.type || 'unknown'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </>

@@ -49,7 +49,7 @@ export function StepIndicator() {
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] transition-colors duration-300 ${
                   isActive
-                    ? 'bg-accent text-white shadow-md shadow-accent/20'
+                    ? 'bg-accent text-white'
                     : isCompleted
                       ? 'bg-success/20 text-success'
                       : 'bg-bg-tertiary border border-border-subtle text-text-muted'

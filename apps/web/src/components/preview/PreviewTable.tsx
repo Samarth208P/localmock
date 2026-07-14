@@ -13,9 +13,12 @@ const ROW_HEIGHT = 32;
 
 type SortDir = 'asc' | 'desc';
 
+const COMPACT_ROW_COUNT = 5;
+
 export function PreviewTable({ rows, isGenerating, progress, error }: PreviewTableProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [expanded, setExpanded] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
@@ -59,7 +62,7 @@ export function PreviewTable({ rows, isGenerating, progress, error }: PreviewTab
   if (!isGenerating && rows.length === 0 && !error) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-text-muted">
-        <div className="rounded-2xl border border-border-subtle bg-bg-secondary/50 p-8 text-center max-w-sm">
+        <div className="rounded-2xl border border-border-subtle bg-bg-secondary p-8 text-center max-w-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-bg-tertiary">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-50">
               <path d="M3 10h18M3 14h18M3 6h18M3 18h18" strokeLinecap="round" />
@@ -100,6 +103,56 @@ export function PreviewTable({ rows, isGenerating, progress, error }: PreviewTab
   }
 
   const gridWidth = columns.length * COL_WIDTH;
+  const hasMoreRows = rows.length > COMPACT_ROW_COUNT;
+  const compactRows = sortedRows.slice(0, COMPACT_ROW_COUNT);
+
+  const renderHeader = () => (
+    <div
+      className="sticky top-0 z-10 flex border-b border-border-subtle bg-bg-tertiary"
+      style={{ width: gridWidth }}
+    >
+      {columns.map((col) => (
+        <button
+          key={col}
+          onClick={() => handleSort(col)}
+          style={{ width: COL_WIDTH }}
+          className="flex flex-shrink-0 items-center gap-1 truncate px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-text-primary"
+          title={`Sort by ${col}`}
+        >
+          <span className="truncate">{col}</span>
+          {sortColumn === col && (
+            <span className="text-accent">{sortDir === 'asc' ? '▲' : '▼'}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderDataRow = (row: Record<string, unknown>, key: string | number) => (
+    <div
+      key={key}
+      className="flex border-b border-border-subtle hover:bg-bg-tertiary"
+      style={{ width: gridWidth, height: ROW_HEIGHT }}
+    >
+      {columns.map((col) => {
+        const val = row[col];
+        const corrupted = isChaosCorrupted(val);
+        const display = formatValue(val);
+        return (
+          <div
+            key={col}
+            style={{ width: COL_WIDTH }}
+            title={display}
+            className={`flex flex-shrink-0 items-center truncate px-3 font-mono text-xs ${
+              corrupted ? 'bg-warning/10 text-warning' : 'text-text-primary'
+            }`}
+          >
+            {display}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="animate-in flex h-full flex-col">
@@ -120,70 +173,84 @@ export function PreviewTable({ rows, isGenerating, progress, error }: PreviewTab
         </div>
       </div>
 
-      {/* Virtualized data grid */}
-      <div className="min-h-0 flex-1 rounded-xl border border-border-subtle bg-bg-secondary overflow-hidden flex flex-col">
-        <div ref={parentRef} className="custom-scrollbar flex-1 overflow-auto">
-          <div style={{ width: gridWidth, minWidth: '100%' }}>
-            {/* Header row */}
-            <div
-              className="sticky top-0 z-10 flex border-b border-border-subtle bg-bg-tertiary"
-              style={{ width: gridWidth }}
-            >
-              {columns.map((col) => (
-                <button
-                  key={col}
-                  onClick={() => handleSort(col)}
-                  style={{ width: COL_WIDTH }}
-                  className="flex flex-shrink-0 items-center gap-1 truncate px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-text-primary"
-                  title={`Sort by ${col}`}
-                >
-                  <span className="truncate">{col}</span>
-                  {sortColumn === col && (
-                    <span className="text-accent">{sortDir === 'asc' ? '▲' : '▼'}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Virtualized rows */}
-            <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: gridWidth }}>
-              {virtualizer.getVirtualItems().map((vRow) => {
-                const row = sortedRows[vRow.index];
-                return (
-                  <div
-                    key={vRow.index}
-                    className="absolute left-0 flex border-b border-border-subtle/30 hover:bg-bg-tertiary/40"
-                    style={{
-                      top: 0,
-                      transform: `translateY(${vRow.start}px)`,
-                      height: vRow.size,
-                      width: gridWidth,
-                    }}
-                  >
-                    {columns.map((col) => {
-                      const val = row[col];
-                      const corrupted = isChaosCorrupted(val);
-                      const display = formatValue(val);
-                      return (
-                        <div
-                          key={col}
-                          style={{ width: COL_WIDTH }}
-                          title={display}
-                          className={`flex flex-shrink-0 items-center truncate px-3 font-mono text-xs ${
-                            corrupted ? 'bg-warning/10 text-warning' : 'text-text-primary'
-                          }`}
-                        >
-                          {display}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+      {!expanded ? (
+        // Compact preview: first 5 rows only, no virtualization needed
+        <div key="compact" className="animate-rise flex-shrink-0 rounded-xl border border-border-subtle bg-bg-secondary overflow-hidden flex flex-col">
+          <div className="custom-scrollbar overflow-x-auto">
+            <div style={{ width: gridWidth, minWidth: '100%' }}>
+              {renderHeader()}
+              {compactRows.map((row, i) => renderDataRow(row, i))}
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // Expanded: full virtualized, sortable grid
+        <div key="expanded" className="animate-rise min-h-0 flex-1 rounded-xl border border-border-subtle bg-bg-secondary overflow-hidden flex flex-col">
+          <div ref={parentRef} className="custom-scrollbar flex-1 overflow-auto">
+            <div style={{ width: gridWidth, minWidth: '100%' }}>
+              {renderHeader()}
+
+              {/* Virtualized rows */}
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: gridWidth }}>
+                {virtualizer.getVirtualItems().map((vRow) => {
+                  const row = sortedRows[vRow.index];
+                  return (
+                    <div
+                      key={vRow.index}
+                      className="absolute left-0 flex border-b border-border-subtle hover:bg-bg-tertiary"
+                      style={{
+                        top: 0,
+                        transform: `translateY(${vRow.start}px)`,
+                        height: vRow.size,
+                        width: gridWidth,
+                      }}
+                    >
+                      {columns.map((col) => {
+                        const val = row[col];
+                        const corrupted = isChaosCorrupted(val);
+                        const display = formatValue(val);
+                        return (
+                          <div
+                            key={col}
+                            style={{ width: COL_WIDTH }}
+                            title={display}
+                            className={`flex flex-shrink-0 items-center truncate px-3 font-mono text-xs ${
+                              corrupted ? 'bg-warning/10 text-warning' : 'text-text-primary'
+                            }`}
+                          >
+                            {display}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expand / collapse control */}
+      {hasMoreRows && (
+        <div className="mt-3 flex-shrink-0 flex items-center justify-center">
+          {!expanded ? (
+            <button
+              onClick={() => setExpanded(true)}
+              className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all duration-150 hover:text-text-primary hover:border-border-active active:scale-[0.97]"
+            >
+              + {(rows.length - COMPACT_ROW_COUNT).toLocaleString()} more rows · View Full Table
+            </button>
+          ) : (
+            <button
+              onClick={() => setExpanded(false)}
+              className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all duration-150 hover:text-text-primary hover:border-border-active active:scale-[0.97]"
+            >
+              Collapse
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Tip */}
       <p className="mt-3 flex-shrink-0 text-center text-[11px] text-text-muted">

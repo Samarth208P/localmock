@@ -19,9 +19,9 @@ export function showToast(text: string, type: ToastType = 'success') {
 }
 
 const TOAST_STYLES: Record<ToastType, { bg: string; icon: string }> = {
-  success: { bg: 'bg-success/90', icon: '✓' },
-  warning: { bg: 'bg-warning/90', icon: '⚠' },
-  error: { bg: 'bg-error/90', icon: '✕' },
+  success: { bg: 'bg-success', icon: '✓' },
+  warning: { bg: 'bg-warning', icon: '⚠' },
+  error: { bg: 'bg-error', icon: '✕' },
 };
 
 export function ToastContainer() {
@@ -48,7 +48,7 @@ export function ToastContainer() {
         return (
           <div
             key={t.id}
-            className={`animate-slide-up flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg backdrop-blur-sm ${style.bg} text-white`}
+            className={`animate-slide-up flex items-center gap-2 rounded-lg border border-border-subtle px-4 py-2.5 text-sm font-medium shadow-sm ${style.bg} text-white`}
           >
             <span className="text-xs leading-none">{style.icon}</span>
             <span>{t.text}</span>

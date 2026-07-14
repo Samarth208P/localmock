@@ -13,7 +13,7 @@ export function QuickStartCards({ onSelect }: QuickStartCardsProps) {
         <button
           key={template.name}
           onClick={() => onSelect(template.schema)}
-          className="group relative rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-300 ease-out hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-md hover:shadow-accent/5"
+          className="group relative rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-colors duration-200 ease-out hover:border-accent/40 hover:bg-accent/[0.03]"
         >
           <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors duration-200">
             {template.name}

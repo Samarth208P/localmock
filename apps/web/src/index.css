@@ -114,6 +114,32 @@
     }
   }
 
+  /* Pure opacity fade — for content area switches where translate would feel jumpy */
+  .animate-fade {
+    animation: fadeOnly 0.18s ease-out;
+  }
+
+  @keyframes fadeOnly {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Fade + slight upward drift — for panel/card reveals */
+  .animate-rise {
+    animation: riseIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes riseIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Directional step transitions */
   .step-slide-forward {
     animation: stepSlideForward 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -150,7 +176,9 @@
     .step-slide-backward,
     .animate-in,
     .animate-slide-up,
-    .animate-scale-in {
+    .animate-scale-in,
+    .animate-fade,
+    .animate-rise {
       animation: none !important;
     }
   }

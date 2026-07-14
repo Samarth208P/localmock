@@ -25,7 +25,7 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary px-6">
       <div className="flex items-center gap-3 lg:w-[200px]">
         <AnimatedLogo />
         <span className="text-lg font-semibold text-text-primary hidden lg:block">LocalMock</span>

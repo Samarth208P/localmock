@@ -312,7 +312,7 @@ function App() {
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="w-full rounded-xl bg-accent py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                    className="w-full rounded-xl bg-accent py-3 text-sm font-medium text-white transition-colors duration-200 hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGenerating
                       ? 'Generating...'

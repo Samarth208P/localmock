@@ -15,7 +15,7 @@ interface PreviewTabsProps {
 
 /**
  * Tab switcher for the right-side preview area.
- * Lets the user flip between the ERD relationship canvas and a flat data grid.
+ * Lets the user flip between the database diagram (table relationship canvas) and a flat data grid.
  */
 export function PreviewTabs({ rows, isGenerating, progress, error }: PreviewTabsProps) {
   const { tables, foreignKeys } = useMultiTableStore();
@@ -40,20 +40,20 @@ export function PreviewTabs({ rows, isGenerating, progress, error }: PreviewTabs
         <div className="inline-flex items-center gap-1 rounded-lg border border-border-subtle bg-bg-secondary p-1">
           <button
             onClick={() => setTab('erd')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 active:scale-[0.96] ${
               tab === 'erd'
-                ? 'bg-accent/15 text-accent'
-                : 'text-text-muted hover:text-text-secondary'
+                ? 'bg-accent/15 text-accent shadow-sm'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
             }`}
           >
-            ERD View
+            Database Diagram
           </button>
           <button
             onClick={() => setTab('data')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 active:scale-[0.96] ${
               tab === 'data'
-                ? 'bg-accent/15 text-accent'
-                : 'text-text-muted hover:text-text-secondary'
+                ? 'bg-accent/15 text-accent shadow-sm'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
             }`}
           >
             Data Preview
@@ -61,15 +61,17 @@ export function PreviewTabs({ rows, isGenerating, progress, error }: PreviewTabs
         </div>
       </div>
 
-      {/* Active tab content */}
+      {/* Active tab content — keyed so the entering panel fades in on every switch */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        {tab === 'erd' ? (
-          <PreviewCanvas />
-        ) : (
-          <div className="h-full overflow-hidden p-4">
-            <PreviewTable rows={rows} isGenerating={isGenerating} progress={progress} error={error} />
-          </div>
-        )}
+        <div key={tab} className="animate-fade h-full overflow-hidden">
+          {tab === 'erd' ? (
+            <PreviewCanvas />
+          ) : (
+            <div className="h-full overflow-hidden p-4">
+              <PreviewTable rows={rows} isGenerating={isGenerating} progress={progress} error={error} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
