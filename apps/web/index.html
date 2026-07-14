@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'worker-src'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.dicebear.com;">
 
-    <title>Free Mock Data Generator — Unlimited CSV, JSON &amp; SQL | LocalMock</title>
-    <meta name="description" content="Generate unlimited mock data instantly in your browser. Paste Prisma, TypeScript, or JSON schemas. Export CSV, JSON, SQL, and more. No signup, no limits, 100% private." />
+    <title>Free Mock Data Generator for CSV, JSON &amp; SQL | LocalMock</title>
+    <meta name="description" content="Generate private mock data in your browser. Build fake test datasets from schemas or templates, then export CSV, JSON, SQL, JSONL, MSW, and TypeScript." />
     <meta name="keywords" content="mock data generator, fake data generator, test data generator, csv generator, json mock data, prisma mock data, typescript mock data, sql insert generator, client-side data generator, free mock data, relational mock data, chaos testing data" />
     <meta name="author" content="LocalMock" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -16,15 +16,15 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="LocalMock" />
     <meta property="og:url" content="https://localmock.dev/" />
-    <meta property="og:title" content="Free Mock Data Generator — Unlimited CSV, JSON &amp; SQL | LocalMock" />
-    <meta property="og:description" content="Generate unlimited mock data instantly in your browser. Paste Prisma, TypeScript, or JSON schemas. Export CSV, JSON, SQL, and more. No signup, no limits, 100% private." />
+    <meta property="og:title" content="Free Mock Data Generator for CSV, JSON &amp; SQL | LocalMock" />
+    <meta property="og:description" content="Generate private mock data in your browser. Build fake test datasets from schemas or templates, then export CSV, JSON, SQL, JSONL, MSW, and TypeScript." />
     <meta property="og:image" content="https://localmock.dev/og-image.svg" />
     <meta property="og:image:alt" content="LocalMock — Free client-side mock data generator at localmock.dev" />
     <meta property="og:locale" content="en_US" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Free Mock Data Generator — Unlimited CSV, JSON &amp; SQL | LocalMock" />
-    <meta name="twitter:description" content="Generate unlimited mock data instantly in your browser. No signup, no limits, 100% private." />
+    <meta name="twitter:title" content="Free Mock Data Generator for CSV, JSON &amp; SQL | LocalMock" />
+    <meta name="twitter:description" content="Generate private mock data in your browser. Export CSV, JSON, SQL, JSONL, MSW, and TypeScript." />
     <meta name="twitter:image" content="https://localmock.dev/og-image.svg" />
     <meta name="twitter:image:alt" content="LocalMock — Free client-side mock data generator at localmock.dev" />
 
@@ -43,12 +43,14 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
+        "@type": ["WebApplication", "SoftwareApplication"],
         "name": "LocalMock",
-        "alternateName": "LocalMock Mock Data Generator",
+        "alternateName": ["LocalMock Mock Data Generator", "Mockaroo alternative", "Fake data generator"],
         "url": "https://localmock.dev",
-        "description": "Generate unlimited mock data instantly in your browser. Paste Prisma, TypeScript, or JSON schemas. Export CSV, JSON, SQL, and more. No signup, no limits, 100% private.",
+        "description": "Generate private mock data in your browser. Build fake test datasets from schemas or templates, then export CSV, JSON, SQL, JSONL, MSW, and TypeScript.",
         "applicationCategory": "DeveloperApplication",
+        "softwareHelp": "https://localmock.dev/",
+        "keywords": "mock data generator, fake data generator, test data generator, Mockaroo alternative, CSV generator, JSON generator, SQL insert generator, Prisma mock data",
         "operatingSystem": "Any",
         "browserRequirements": "Requires JavaScript. Requires HTML5.",
         "offers": {
@@ -57,7 +59,7 @@
           "priceCurrency": "USD"
         },
         "featureList": [
-          "Unlimited mock data generation",
+          "Unlimited browser-based mock data generation",
           "Prisma and TypeScript schema parsing",
           "Relational data with foreign key integrity",
           "Chaos testing engine",
@@ -66,6 +68,38 @@
         ],
         "screenshot": "https://localmock.dev/og-image.svg",
         "inLanguage": "en"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is the best free mock data generator for CSV, JSON, and SQL?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "LocalMock is a free mock data generator for developers who need private test data in CSV, JSON, JSONL, SQL inserts, MSW handlers, and TypeScript arrays. It runs in the browser and does not require signup."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is LocalMock a Mockaroo alternative?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. LocalMock is a browser-based Mockaroo alternative focused on private client-side generation, schema parsing, relational mock data, chaos testing, reusable templates, and developer export formats."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does mock data leave my browser?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. LocalMock generates data client-side, so schemas and generated fake data stay in your browser."
+            }
+          }
+        ]
       }
     </script>
   </head>

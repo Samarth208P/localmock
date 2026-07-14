@@ -2,7 +2,7 @@ export const SITE_URL = 'https://localmock.dev';
 export const SITE_NAME = 'LocalMock';
 export const SITE_TAGLINE = 'Free Client-Side Mock Data Generator';
 export const SITE_DESCRIPTION =
-  'Generate unlimited mock data instantly in your browser. Paste Prisma, TypeScript, or JSON schemas. Export CSV, JSON, SQL, and more. No signup, no limits, 100% private.';
+  'Generate private mock data in your browser. Build fake test datasets from schemas or templates, then export CSV, JSON, SQL, JSONL, MSW, and TypeScript.';
 export const SITE_KEYWORDS = [
   'mock data generator',
   'fake data generator',
@@ -23,7 +23,7 @@ export const SITE_TWITTER_HANDLE = '@localmockdev';
 
 export const PAGE_SEO = {
   input: {
-    title: 'Free Mock Data Generator — Unlimited CSV, JSON & SQL | LocalMock',
+    title: 'Free Mock Data Generator for CSV, JSON & SQL | LocalMock',
     description: SITE_DESCRIPTION,
   },
   configure: {

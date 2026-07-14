@@ -29,7 +29,7 @@ function setCanonical(url: string) {
 export function usePageSeo(step: AppStep) {
   useEffect(() => {
     const seo = PAGE_SEO[step];
-    const canonical = `${SITE_URL}${window.location.pathname}${window.location.search}`;
+    const canonical = `${SITE_URL}${window.location.pathname}`;
 
     document.title = seo.title;
     setMeta('description', seo.description);

@@ -18,6 +18,47 @@ import { usePageSeo } from '@/hooks/usePageSeo';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
 
+const seoFeatureBlocks = [
+  {
+    title: 'Browser-private test data',
+    body: 'LocalMock generates mock data client-side, so your schemas, sample customer fields, and exported datasets stay in the browser.',
+  },
+  {
+    title: 'Schema-aware generation',
+    body: 'Paste Prisma, TypeScript, or JSON schemas, build fields manually, or start from templates for users, orders, products, invoices, logs, and more.',
+  },
+  {
+    title: 'Developer export formats',
+    body: 'Export fake data as CSV, JSON, JSONL, SQL inserts, MSW handlers, and TypeScript arrays for tests, demos, seed scripts, and API mocks.',
+  },
+];
+
+const competitorRows = [
+  ['Privacy model', 'Client-side generation; data stays in the browser', 'Often server-assisted or account-based workflows'],
+  ['Schema input', 'Prisma, TypeScript, JSON, manual fields, templates, and multi-table relations', 'Usually form-first schema builders'],
+  ['Testing features', 'Chaos data, referential integrity, shareable schemas, and local exports', 'Strong fake data catalogs, fewer local-first testing workflows'],
+  ['Price fit', 'Free, no signup, no row limits enforced by an account tier', 'Usage may depend on plans, accounts, or credits'],
+];
+
+const faqItems = [
+  {
+    question: 'What is LocalMock?',
+    answer: 'LocalMock is a free mock data generator for creating realistic fake test data in your browser. It is built for developers who need quick CSV, JSON, SQL, JSONL, MSW, or TypeScript exports without uploading private schemas.',
+  },
+  {
+    question: 'Is LocalMock a Mockaroo alternative?',
+    answer: 'Yes. LocalMock is a Mockaroo alternative for teams that want private browser-based generation, schema parsing, relational mock data, chaos testing, and export formats that plug directly into frontend and backend development workflows.',
+  },
+  {
+    question: 'Can I generate relational mock data?',
+    answer: 'Yes. LocalMock supports multi-table setup and parsed schema relations so generated records can preserve foreign key references across related tables.',
+  },
+  {
+    question: 'What can I export?',
+    answer: 'You can export generated data as CSV, JSON, JSONL, SQL inserts, MSW handlers, TypeScript arrays, and other developer-friendly formats from the preview step.',
+  },
+];
+
 function App() {
   const { parsedSchema, parseError } = useSchemaStore();
   const chaosStore = useChaosStore();
@@ -209,6 +250,72 @@ function App() {
                   {parseError}
                 </div>
               )}
+
+              <section className="mt-16 border-t border-border-subtle pt-12" aria-labelledby="mock-data-generator-details">
+                <div className="max-w-3xl">
+                  <h2 id="mock-data-generator-details" className="text-2xl font-semibold tracking-tight text-text-primary">
+                    A free mock data generator for private CSV, JSON, and SQL test data
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-text-secondary">
+                    LocalMock helps developers create realistic fake data for product demos, seed scripts, QA workflows, API mocks, and automated tests. Unlike server-first generators, LocalMock keeps generation local to your browser while still supporting schema parsing, relational data, chaos cases, and large exports.
+                  </p>
+                </div>
+
+                <div className="mt-8 grid gap-4 md:grid-cols-3">
+                  {seoFeatureBlocks.map((block) => (
+                    <article key={block.title} className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
+                      <h3 className="text-base font-semibold text-text-primary">{block.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-text-secondary">{block.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="mt-12" aria-labelledby="mockaroo-alternative">
+                <div className="max-w-3xl">
+                  <h2 id="mockaroo-alternative" className="text-2xl font-semibold tracking-tight text-text-primary">
+                    LocalMock vs Mockaroo and other fake data generators
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-text-secondary">
+                    Mockaroo is a well-known fake data generator. LocalMock competes by focusing on local-first privacy, developer schemas, relational testing, and exports that fit modern app development without a signup step.
+                  </p>
+                </div>
+
+                <div className="mt-6 overflow-x-auto rounded-lg border border-border-subtle">
+                  <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+                    <thead className="bg-bg-secondary text-text-primary">
+                      <tr>
+                        <th className="border-b border-border-subtle px-4 py-3 font-semibold">Need</th>
+                        <th className="border-b border-border-subtle px-4 py-3 font-semibold">LocalMock</th>
+                        <th className="border-b border-border-subtle px-4 py-3 font-semibold">Typical generators</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-subtle text-text-secondary">
+                      {competitorRows.map(([need, localMock, typical]) => (
+                        <tr key={need}>
+                          <th className="bg-bg-secondary/50 px-4 py-3 font-medium text-text-primary">{need}</th>
+                          <td className="px-4 py-3 leading-6">{localMock}</td>
+                          <td className="px-4 py-3 leading-6">{typical}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="mt-12" aria-labelledby="mock-data-faq">
+                <h2 id="mock-data-faq" className="text-2xl font-semibold tracking-tight text-text-primary">
+                  Mock data generator FAQ
+                </h2>
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {faqItems.map((item) => (
+                    <article key={item.question} className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
+                      <h3 className="text-base font-semibold text-text-primary">{item.question}</h3>
+                      <p className="mt-2 text-sm leading-6 text-text-secondary">{item.answer}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
 
             </div>
           </div>
