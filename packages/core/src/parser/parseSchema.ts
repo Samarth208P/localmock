@@ -45,7 +45,12 @@ export function parseSchema(input: string): ParseResult {
 // --- JSON ---
 
 function parseJSON(input: string): ParsedTable[] {
-  const parsed = JSON.parse(input);
+  const parsed = JSON.parse(input, (key, value) => {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return undefined;
+    }
+    return value;
+  });
   const obj = Array.isArray(parsed) ? parsed[0] : parsed;
   if (!obj || typeof obj !== 'object') return [];
 

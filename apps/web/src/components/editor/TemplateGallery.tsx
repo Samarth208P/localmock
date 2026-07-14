@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { TEMPLATES, type SchemaTemplate } from '@/data/templates';
 import type { FieldRow } from './FieldBuilder';
+import { getHistory, type SchemaHistoryEntry } from '@/lib/schemaHistory';
 
 interface TemplateGalleryProps {
   onSelect: (fields: FieldRow[]) => void;
@@ -8,6 +9,7 @@ interface TemplateGalleryProps {
 
 const CATEGORIES = [
   { id: 'all', label: 'All' },
+  { id: 'saved', label: 'Saved', match: [] },
   { id: 'people', label: 'People', match: ['Users', 'Employees', 'Students'] },
   { id: 'commerce', label: 'Commerce', match: ['Products', 'Orders', 'Payments', 'Invoices', 'Subscriptions', 'Inventory'] },
   { id: 'content', label: 'Content', match: ['Blog Posts', 'Comments', 'Social Posts', 'Chat Messages', 'Notifications', 'Recipes', 'Movies'] },
@@ -19,15 +21,34 @@ const CATEGORIES = [
 export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const [savedTemplates, setSavedTemplates] = useState<SchemaHistoryEntry[]>([]);
+
+  useEffect(() => {
+    const loadSaved = () => {
+      getHistory().then(setSavedTemplates);
+    };
+    loadSaved();
+    window.addEventListener('template-saved', loadSaved);
+    return () => window.removeEventListener('template-saved', loadSaved);
+  }, []);
 
   const filtered = useMemo(() => {
-    let results = TEMPLATES;
+    const combinedTemplates = [
+      ...savedTemplates.map(st => ({ name: st.name, description: 'Saved Custom Template', fields: st.fields } as SchemaTemplate)),
+      ...TEMPLATES
+    ];
+
+    let results = combinedTemplates;
 
     // Filter by category
     if (category !== 'all') {
-      const cat = CATEGORIES.find((c) => c.id === category);
-      if (cat && 'match' in cat) {
-        results = results.filter((t) => (cat.match as readonly string[]).includes(t.name));
+      if (category === 'saved') {
+        results = results.filter(t => t.description === 'Saved Custom Template');
+      } else {
+        const cat = CATEGORIES.find((c) => c.id === category);
+        if (cat && 'match' in cat) {
+          results = results.filter((t) => (cat.match as readonly string[]).includes(t.name));
+        }
       }
     }
 
@@ -91,12 +112,19 @@ export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
           <button
             key={template.name}
             onClick={() => handleSelect(template)}
-            className="group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-200 hover:border-accent/40 hover:bg-accent/[0.03] hover:-translate-y-0.5 hover:shadow-sm"
+            className="relative group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-200 hover:border-accent/40 hover:bg-accent/[0.03] hover:-translate-y-0.5 hover:shadow-sm"
           >
-            <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors">
+            {template.description === 'Saved Custom Template' && (
+              <div className="absolute top-4 right-4">
+                <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent ring-1 ring-accent/20 ring-inset">
+                  Saved
+                </span>
+              </div>
+            )}
+            <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors pr-12">
               {template.name}
             </p>
-            <p className="mt-1 text-[11px] text-text-muted leading-relaxed line-clamp-2">
+            <p className="mt-1 text-[11px] text-text-muted leading-relaxed line-clamp-2 pr-12">
               {template.description}
             </p>
             <div className="mt-2.5 flex flex-wrap gap-1">

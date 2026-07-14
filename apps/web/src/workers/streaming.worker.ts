@@ -76,11 +76,12 @@ self.onmessage = (event: MessageEvent<StreamMessage>) => {
               value = generateTypedValue(field.typeId, opts, retryCtx);
               attempts++;
               if (attempts > 50) {
-                self.postMessage({
-                  type: 'stream-error',
-                  message: `Unique pool exhausted for "${field.name}" at row ${i}`,
-                });
-                return;
+                value = typeof value === 'string' 
+                  ? `${value}_${seen.size}`
+                  : typeof value === 'number' 
+                    ? value + seen.size 
+                    : value;
+                break;
               }
             } while (seen.has(value));
             seen.add(value);

@@ -107,12 +107,13 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
             attempts++;
 
             if (attempts > COLLISION_LIMIT) {
-              const error: GenerateError = {
-                type: 'error',
-                message: `Cannot generate ${rowCount.toLocaleString()} unique values for "${field.name}" (${field.typeId}). Pool exhausted after ${seen.size} unique values. Reduce row count or disable Unique for this field.`,
-              };
-              self.postMessage(error);
-              return;
+              // Instead of crashing, append a unique suffix based on the set size
+              value = typeof value === 'string' 
+                ? `${value}_${seen.size}`
+                : typeof value === 'number' 
+                  ? value + seen.size 
+                  : value;
+              break;
             }
           } while (seen.has(value));
 

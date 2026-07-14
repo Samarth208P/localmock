@@ -1,8 +1,8 @@
 import type { ParsedTable } from '../parser/types';
 import { topologicalSort } from './topologicalSort';
-import { createRowContext } from '../generators/custom';
+import { createRowContext } from '../generators/engine';
 import type { DAGNode } from './types';
-import type { RowContext } from '../generators/custom';
+import type { RowContext } from '../generators/engine';
 
 /**
  * Generates data for multiple related tables in dependency order.

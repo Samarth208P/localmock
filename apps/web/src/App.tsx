@@ -12,7 +12,6 @@ import { useChaosStore } from '@/store/chaosStore';
 import { useAppStore } from '@/store/appStore';
 import { useMultiTableStore } from '@/store/multiTableStore';
 import { useWorker } from '@/hooks/useWorker';
-import { saveToHistory } from '@/lib/schemaHistory';
 import { decodeSchemaFromUrl, encodeSchemaToUrl } from '@/lib/shareableUrl';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
@@ -87,7 +86,6 @@ function App() {
 
     if (fieldDefs.length === 0) return;
 
-    // Save to IndexedDB history
     const historyFields: FieldRow[] = fieldDefs.map((f, i) => ({
       id: `hist-${i}`,
       name: f.name,
@@ -95,7 +93,6 @@ function App() {
       options: f.options,
       unique: f.unique,
     }));
-    saveToHistory(historyFields, tableName);
 
     // Encode schema into shareable URL
     encodeSchemaToUrl(historyFields);
@@ -120,17 +117,25 @@ function App() {
         {step === 'input' && (
           <div className="animate-in flex flex-1 flex-col overflow-y-auto px-6 py-8 lg:py-12">
             <div className="w-full max-w-6xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-3xl sm:text-4xl font-bold text-text-primary tracking-tight mb-2">
-                  Define your data
-                </h1>
-                <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-xl">
-                  Paste a schema from any language, or build fields manually with 80+ data types.
-                </p>
+              <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-text-primary tracking-tight mb-2">
+                    Define your data
+                  </h1>
+                  <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-xl">
+                    Paste a schema from any language, or build fields manually with 80+ data types.
+                  </p>
+                </div>
+
               </div>
 
               <div className="mt-8">
-                <SchemaEditor onFieldsChange={handleFieldsChange} initialFields={fieldsRef.current.length > 0 ? fieldsRef.current : urlFields} />
+                <SchemaEditor 
+                  onFieldsChange={handleFieldsChange} 
+                  initialFields={fieldsRef.current.length > 0 ? fieldsRef.current : urlFields} 
+                  onGenerate={handleProceedToConfigure}
+                  hasSchema={hasSchema}
+                />
               </div>
 
               {parseError && (
@@ -139,17 +144,6 @@ function App() {
                 </div>
               )}
 
-              {hasSchema && (
-                <div className="sticky bottom-6 mt-8 flex justify-center sm:justify-end pb-4">
-                  <button
-                    onClick={handleProceedToConfigure}
-                    className="animate-slide-up flex items-center gap-2 rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-200 hover:bg-accent-hover hover:-translate-y-0.5 active:scale-95"
-                  >
-                    Configure & Generate
-                    <span className="text-lg leading-none">→</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -3,24 +3,32 @@ import { useSchemaStore } from '@/store/schemaStore';
 import { parseSchema } from '@localmock/core';
 import { TemplateGallery } from './TemplateGallery';
 import { FieldBuilder, type FieldRow } from './FieldBuilder';
-import { HistoryPanel } from './HistoryPanel';
 import { MultiTableBuilder } from '@/components/builder/MultiTableBuilder';
-import { IconClipboard, IconWrench } from '@/components/shared/Icons';
+import { IconClipboard, IconFileText, IconWrench } from '@/components/shared/Icons';
 
-type InputMode = 'choose' | 'paste' | 'build' | 'multi-table';
+type InputMode = 'paste' | 'build' | 'multi-table' | 'template';
 
 interface SchemaEditorProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
   initialFields?: FieldRow[];
+  onGenerate?: () => void;
+  hasSchema?: boolean;
 }
 
-export function SchemaEditor({ onFieldsChange, initialFields }: SchemaEditorProps) {
+export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSchema }: SchemaEditorProps) {
   const { rawInput, setRawInput, setParsedSchema, setParseError, parsedSchema } = useSchemaStore();
   const [mode, setMode] = useState<InputMode>(
-    initialFields && initialFields.length > 0 ? 'build' : rawInput || parsedSchema ? 'paste' : 'choose'
+    initialFields && initialFields.length > 0 ? 'build' : rawInput || parsedSchema ? 'paste' : 'build'
   );
   const [isFocused, setIsFocused] = useState(false);
   const [restoredFields, setRestoredFields] = useState<FieldRow[] | undefined>(initialFields);
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleResetBuilder = useCallback(() => {
+    setRestoredFields(undefined);
+    if (onFieldsChange) onFieldsChange([]);
+    setResetKey(k => k + 1);
+  }, [onFieldsChange]);
 
   const handleParse = useCallback(
     (input: string) => {
@@ -63,21 +71,6 @@ export function SchemaEditor({ onFieldsChange, initialFields }: SchemaEditorProp
     [setRawInput, handleParse],
   );
 
-  const handleReset = () => {
-    setMode('choose');
-    setRawInput('');
-    useSchemaStore.getState().reset();
-  };
-
-  const handleRestoreFromHistory = useCallback(
-    (fields: FieldRow[]) => {
-      setRestoredFields(fields);
-      setMode('build');
-      if (onFieldsChange) onFieldsChange(fields);
-    },
-    [onFieldsChange],
-  );
-
   const handleTemplateLoad = useCallback(
     (fields: FieldRow[]) => {
       setRestoredFields(fields);
@@ -87,186 +80,184 @@ export function SchemaEditor({ onFieldsChange, initialFields }: SchemaEditorProp
     [onFieldsChange],
   );
 
-  // Mode: Choose (initial)
-  if (mode === 'choose') {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 animate-in fade-in zoom-in-95 duration-200">
-        {/* Left Column: Main Actions */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => setMode('paste')}
-              className="group col-span-1 sm:col-span-2 rounded-2xl border border-accent/40 bg-bg-secondary p-5 sm:p-6 text-left transition-[border-color,box-shadow,transform] duration-300 ease-out hover:border-accent hover:shadow-[0_0_25px_rgba(99,102,241,0.15)] hover:-translate-y-0.5 relative overflow-hidden"
-            >
-              <div className="absolute -right-4 -top-8 opacity-5 group-hover:opacity-10 transition-opacity duration-300 text-accent">
-                <IconClipboard size={140} />
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in duration-200">
+      {/* Main Workspace */}
+      <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-4">
+        {mode === 'build' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text-primary">Manual Builder</h2>
+              <button
+                onClick={handleResetBuilder}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-error/30 hover:text-error hover:bg-error/5 transition-all duration-200"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+                </svg>
+                Reset Fields
+              </button>
+            </div>
+            <FieldBuilder key={`builder-${resetKey}`} onFieldsChange={onFieldsChange} initialFields={restoredFields} />
+          </div>
+        )}
+
+        {mode === 'template' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text-primary">Template Gallery</h2>
+            </div>
+            <div className="mt-2">
+              <TemplateGallery onSelect={handleTemplateLoad} />
+            </div>
+          </div>
+        )}
+
+        {mode === 'multi-table' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text-primary">Multi-Table Setup</h2>
+            </div>
+            <MultiTableBuilder />
+          </div>
+        )}
+
+        {mode === 'paste' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col gap-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-text-primary">Paste Schema</h2>
+              {rawInput && (
+                <button
+                  onClick={() => {
+                    setRawInput('');
+                    useSchemaStore.getState().reset();
+                  }}
+                  className="text-xs text-text-muted hover:text-error transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <div
+                className={`
+                  relative overflow-hidden rounded-xl border transition-[border-color,box-shadow] duration-300 ease-out
+                  ${isFocused
+                    ? 'border-accent/60 shadow-[0_0_0_3px_rgba(99,102,241,0.08)]'
+                    : 'border-border-subtle hover:border-border-active'
+                  }
+                  bg-bg-secondary
+                `}
+              >
+                <textarea
+                  value={rawInput}
+                  onChange={(e) => handleChange(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder={`// Paste any schema here...\n\ninterface User {\n  id: string;\n  email: string;\n  name: string;\n  role: 'admin' | 'member' | 'viewer';\n  isVerified: boolean;\n  createdAt: string;\n}`}
+                  className="
+                    block w-full resize-none bg-transparent p-5 font-mono text-[13px] leading-relaxed
+                    text-text-primary placeholder:text-text-muted/50
+                    focus:outline-none
+                    min-h-[400px]
+                  "
+                  style={{ overflow: 'hidden', overflowY: 'auto', scrollbarWidth: 'none' }}
+                  spellCheck={false}
+                  aria-label="Schema input editor"
+                />
               </div>
-              <div className="relative z-10">
-                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                  <IconClipboard size={20} />
+
+              {rawInput && (
+                <div className="absolute left-4 bottom-3 pointer-events-none">
+                  <span className="inline-flex items-center rounded-md bg-bg-tertiary/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-text-muted">
+                    {useSchemaStore.getState().parsedSchema?.format || 'detecting...'}
+                  </span>
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors">
-                  Paste your Schema
-                </h3>
-                <p className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl">
-                  The fastest way to start. Paste TypeScript, Prisma, JSON, Go, Python, Rust, or SQL. We auto-detect the format and instantly configure your generators.
-                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sidebar */}
+      <div className="lg:col-span-4 xl:col-span-3 space-y-8 border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0 lg:pl-8">
+        <div>
+          <h3 className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
+            Input Methods
+          </h3>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setMode('build')}
+              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
+                mode === 'build'
+                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
+                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
+            >
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'build' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
+                <IconWrench size={16} />
               </div>
+              <span className="text-sm font-medium">Builder</span>
             </button>
 
             <button
-              onClick={() => setMode('build')}
-              className="group rounded-2xl border border-border-subtle bg-bg-secondary p-5 text-left transition-[border-color,box-shadow,transform,background-color] duration-300 ease-out hover:border-accent/40 hover:bg-bg-tertiary hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
+              onClick={() => setMode('paste')}
+              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
+                mode === 'paste'
+                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
+                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
             >
-              <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
-                <IconWrench size={22} />
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'paste' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
+                <IconClipboard size={16} />
               </div>
-              <p className="text-base font-medium text-text-primary group-hover:text-accent transition-colors">
-                Build Manually
-              </p>
-              <p className="mt-1.5 text-xs text-text-muted leading-relaxed">
-                Construct fields one by one using our library of 80+ data types.
-              </p>
+              <span className="text-sm font-medium">Paste Schema</span>
             </button>
 
             <button
               onClick={() => setMode('multi-table')}
-              className="group rounded-2xl border border-border-subtle bg-bg-secondary p-5 text-left transition-[border-color,box-shadow,transform,background-color] duration-300 ease-out hover:border-accent/40 hover:bg-bg-tertiary hover:shadow-md hover:shadow-accent/5 hover:-translate-y-0.5"
+              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
+                mode === 'multi-table'
+                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
+                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
             >
-              <div className="mb-3 text-text-muted group-hover:text-accent transition-colors">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'multi-table' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
                 </svg>
               </div>
-              <p className="text-base font-medium text-text-primary group-hover:text-accent transition-colors">
-                Multi-Table Setup
-              </p>
-              <p className="mt-1.5 text-xs text-text-muted leading-relaxed">
-                Define relational data with foreign keys and dependencies.
-              </p>
+              <span className="text-sm font-medium">Multi-Table Setup</span>
+            </button>
+
+            <button
+              onClick={() => setMode('template')}
+              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
+                mode === 'template'
+                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
+                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
+            >
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'template' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
+                <IconFileText size={16} />
+              </div>
+              <span className="text-sm font-medium">Templates</span>
             </button>
           </div>
+          
+          {hasSchema && onGenerate && (
+            <div className="mt-12">
+              <button
+                onClick={onGenerate}
+                className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
+              >
+                <span className="whitespace-nowrap">Configure & Generate</span>
+                <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Right Column: Templates & History */}
-        <div className="lg:col-span-5 space-y-6 border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0 lg:pl-10">
-          <div>
-            <p className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Start from a template
-            </p>
-            <TemplateGallery onSelect={handleTemplateLoad} />
-          </div>
-
-          <div className="pt-4">
-            <HistoryPanel onRestore={handleRestoreFromHistory} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mode: Build manually
-  if (mode === 'build') {
-    return (
-      <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setMode('choose')}
-            className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
-          >
-            <span className="text-sm leading-none">←</span> Back to Options
-          </button>
-          <span className="text-xs text-text-muted">Manual Builder</span>
-        </div>
-
-        <FieldBuilder onFieldsChange={onFieldsChange} initialFields={restoredFields} />
-      </div>
-    );
-  }
-
-  // Mode: Multi-table relational
-  if (mode === 'multi-table') {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setMode('choose')}
-            className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
-          >
-            <span className="text-sm leading-none">←</span> Back to Options
-          </button>
-          <span className="text-xs text-text-muted">Multi-Table Builder</span>
-        </div>
-
-        <MultiTableBuilder />
-      </div>
-    );
-  }
-
-  // Mode: Paste schema
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => {
-            // Only go back to menu without completely wiping store state so it survives
-            setMode('choose');
-          }}
-          className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-0.5"
-        >
-          <span className="text-sm leading-none">←</span> Back to Options
-        </button>
-        {rawInput && (
-          <button
-            onClick={() => {
-              setRawInput('');
-              useSchemaStore.getState().reset();
-            }}
-            className="text-xs text-text-muted hover:text-error transition-colors"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Editor area */}
-      <div className="relative">
-        <div
-          className={`
-            relative overflow-hidden rounded-xl border transition-all duration-300 ease-out
-            ${isFocused
-              ? 'border-accent/60 shadow-[0_0_0_3px_rgba(99,102,241,0.08)]'
-              : 'border-border-subtle hover:border-border-active'
-            }
-            bg-bg-secondary
-          `}
-        >
-          <textarea
-            value={rawInput}
-            onChange={(e) => handleChange(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={`// Paste any schema here...\n\ninterface User {\n  id: string;\n  email: string;\n  name: string;\n  role: 'admin' | 'member' | 'viewer';\n  isVerified: boolean;\n  createdAt: string;\n}`}
-            className="
-              block w-full resize-none bg-transparent p-5 font-mono text-[13px] leading-relaxed
-              text-text-primary placeholder:text-text-muted/50
-              focus:outline-none
-              min-h-[320px]
-            "
-            style={{ overflow: 'hidden', overflowY: 'auto', scrollbarWidth: 'none' }}
-            spellCheck={false}
-            aria-label="Schema input editor"
-          />
-        </div>
-
-        {/* Format badge */}
-        {rawInput && (
-          <div className="absolute left-4 bottom-3 pointer-events-none">
-            <span className="inline-flex items-center rounded-md bg-bg-tertiary/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-text-muted">
-              {useSchemaStore.getState().parsedSchema?.format || 'detecting...'}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
