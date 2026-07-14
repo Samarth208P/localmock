@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 interface StreamingProgressProps {
   generated: number;
   total: number;
@@ -6,6 +8,23 @@ interface StreamingProgressProps {
 }
 
 export function StreamingProgress({ generated, total, eta, percent }: StreamingProgressProps) {
+  const [rate, setRate] = useState<number | null>(null);
+  const lastSampleRef = useRef<{ generated: number; time: number } | null>(null);
+
+  // Track rows/sec throughput from deltas between progress updates.
+  useEffect(() => {
+    const now = performance.now();
+    const last = lastSampleRef.current;
+    if (last) {
+      const deltaRows = generated - last.generated;
+      const deltaSeconds = (now - last.time) / 1000;
+      if (deltaSeconds > 0.05 && deltaRows > 0) {
+        setRate(Math.round(deltaRows / deltaSeconds));
+      }
+    }
+    lastSampleRef.current = { generated, time: now };
+  }, [generated]);
+
   const formatEta = (seconds: number): string => {
     if (seconds < 60) return `${seconds}s`;
     const min = Math.floor(seconds / 60);
@@ -32,7 +51,10 @@ export function StreamingProgress({ generated, total, eta, percent }: StreamingP
         <span>
           {generated.toLocaleString()} / {total.toLocaleString()} rows
         </span>
-        {eta > 0 && <span>ETA: {formatEta(eta)}</span>}
+        <span className="flex items-center gap-2">
+          {rate !== null && rate > 0 && <span className="font-mono">{rate.toLocaleString()} rows/s</span>}
+          {eta > 0 && <span>ETA: {formatEta(eta)}</span>}
+        </span>
       </div>
     </div>
   );

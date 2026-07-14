@@ -3,6 +3,8 @@ import { useSchemaStore } from '@/store/schemaStore';
 import { parseSchema } from '@localmock/core';
 import { TemplateGallery } from './TemplateGallery';
 import { FieldBuilder, type FieldRow } from './FieldBuilder';
+import { QuickStartCards } from './QuickStartCards';
+import { SchemaSummaryPanel } from './SchemaSummaryPanel';
 import { MultiTableBuilder } from '@/components/builder/MultiTableBuilder';
 import { IconClipboard, IconFileText, IconWrench } from '@/components/shared/Icons';
 
@@ -81,10 +83,50 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
     [onFieldsChange],
   );
 
+  const tabs: { id: InputMode; label: string; icon: (props: { size?: number }) => JSX.Element }[] = [
+    { id: 'build', label: 'Builder', icon: (p) => <IconWrench {...p} /> },
+    { id: 'paste', label: 'Paste Schema', icon: (p) => <IconClipboard {...p} /> },
+    {
+      id: 'multi-table',
+      label: 'Multi-Table Setup',
+      icon: ({ size = 16 }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
+        </svg>
+      ),
+    },
+    { id: 'template', label: 'Templates', icon: (p) => <IconFileText {...p} /> },
+  ];
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in duration-200">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+      {/* Horizontal mode tab bar */}
+      <div className="flex flex-wrap gap-3">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = mode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setMode(tab.id)}
+              className={`group flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left transition-all duration-200 ${
+                isActive
+                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
+                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
+            >
+              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${isActive ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
+                <Icon size={15} />
+              </div>
+              <span className="text-sm font-medium whitespace-nowrap">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
       {/* Main Workspace */}
-      <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-4">
+      <div className="lg:col-span-8 flex flex-col space-y-4">
         {mode === 'build' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="mb-4 flex items-center justify-between">
@@ -140,6 +182,13 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
               )}
             </div>
 
+            {!rawInput && (
+              <div className="mb-2">
+                <p className="mb-3 text-xs font-medium text-text-muted">Quick start with a template:</p>
+                <QuickStartCards onSelect={handleChange} />
+              </div>
+            )}
+
             <div className="relative">
               <div
                 className={`
@@ -181,84 +230,22 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
         )}
       </div>
 
-      {/* Sidebar */}
-      <div className="lg:col-span-4 xl:col-span-3 space-y-8 border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0 lg:pl-8">
-        <div>
-          <h3 className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
-            Input Methods
-          </h3>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => setMode('build')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'build'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'build' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconWrench size={16} />
-              </div>
-              <span className="text-sm font-medium">Builder</span>
-            </button>
+      {/* Right column: live summary + history */}
+      <div className="lg:col-span-4 flex flex-col">
+        <SchemaSummaryPanel fields={restoredFields} onRestoreHistory={handleTemplateLoad} />
 
+        {hasSchema && onGenerate && (
+          <div className="mt-6">
             <button
-              onClick={() => setMode('paste')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'paste'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
+              onClick={onGenerate}
+              className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'paste' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconClipboard size={16} />
-              </div>
-              <span className="text-sm font-medium">Paste Schema</span>
-            </button>
-
-            <button
-              onClick={() => setMode('multi-table')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'multi-table'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'multi-table' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium">Multi-Table Setup</span>
-            </button>
-
-            <button
-              onClick={() => setMode('template')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'template'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'template' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconFileText size={16} />
-              </div>
-              <span className="text-sm font-medium">Templates</span>
+              <span className="whitespace-nowrap">Configure</span>
+              <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
             </button>
           </div>
-          
-          {hasSchema && onGenerate && (
-            <div className="mt-12">
-              <button
-                onClick={onGenerate}
-                className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
-              >
-                <span className="whitespace-nowrap">Configure</span>
-                <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </button>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
       </div>
     </div>
   );

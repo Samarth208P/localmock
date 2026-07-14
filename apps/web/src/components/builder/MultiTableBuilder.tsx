@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useMultiTableStore } from '@/store/multiTableStore';
 import { FieldBuilder, type FieldRow } from '@/components/editor/FieldBuilder';
+import { MiniERD } from './MiniERD';
 
 export function MultiTableBuilder() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,6 +65,9 @@ export function MultiTableBuilder() {
 
   return (
     <div className="space-y-4">
+      {/* Mini live ERD */}
+      {tables.length > 0 && <MiniERD />}
+
       {/* Table tabs */}
       {tables.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-2">

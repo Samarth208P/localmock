@@ -11,31 +11,31 @@ const config: Config = {
     extend: {
       colors: {
         bg: {
-          primary: '#0a0a0b',
-          secondary: '#141416',
-          tertiary: '#1c1c1f',
+          primary: 'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          tertiary: 'var(--bg-tertiary)',
         },
         border: {
-          subtle: '#2a2a2e',
-          active: '#3a3a40',
+          subtle: 'var(--border-subtle)',
+          active: 'var(--border-active)',
         },
         text: {
-          primary: '#fafafa',
-          secondary: '#a1a1aa',
-          muted: '#71717a',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
         },
         accent: {
-          DEFAULT: '#6366f1',
-          hover: '#818cf8',
-          subtle: 'rgba(99, 102, 241, 0.1)',
+          DEFAULT: 'var(--accent)',
+          hover: 'var(--accent-hover)',
+          subtle: 'var(--accent-subtle)',
         },
-        success: '#22c55e',
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        error: 'var(--error)',
+        info: 'var(--info)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       borderRadius: {
