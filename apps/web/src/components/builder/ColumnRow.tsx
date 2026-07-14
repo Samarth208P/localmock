@@ -1,10 +1,27 @@
 import type { ParsedColumn } from '@/store/schemaStore';
 import { Select } from '../shared/Select';
+import { CATEGORY_ICONS } from '../shared/Icons';
+import { findDataType } from '@/lib/dataTypes';
 
 interface ColumnRowProps {
   column: ParsedColumn;
   onTypeChange: (columnId: string, newType: string, newFakerMethod: string) => void;
   onConfirm: (columnId: string) => void;
+}
+
+/** A handful of ColumnRow's TYPE_OPTIONS ids don't line up 1:1 with dataTypes.ts
+ * ids (e.g. 'date' vs 'pastDate'/'recentDate'). This small override map covers
+ * those so every type still resolves to a sensible category icon. */
+const TYPE_CATEGORY_OVERRIDES: Record<string, string> = {
+  date: 'datetime',
+  decimal: 'numbers',
+  address: 'location',
+  company: 'commerce',
+  string: 'text',
+};
+
+function getCategoryForType(type: string): string | undefined {
+  return findDataType(type)?.category ?? TYPE_CATEGORY_OVERRIDES[type];
 }
 
 const TYPE_OPTIONS = [
@@ -38,8 +55,11 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
         ? 'bg-warning/10 text-warning border-warning/20'
         : 'bg-error/10 text-error border-error/20';
 
+  const category = getCategoryForType(column.type);
+  const TypeIcon = category ? CATEGORY_ICONS[category] : undefined;
+
   return (
-    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border-subtle bg-bg-secondary px-4 py-2.5 transition-colors hover:border-border-active">
+    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 rounded-lg border border-border-subtle bg-bg-secondary px-4 py-2.5 transition-colors hover:border-border-active">
       {/* Field name */}
       <input
         type="text"
@@ -47,6 +67,13 @@ export function ColumnRow({ column, onTypeChange, onConfirm }: ColumnRowProps) {
         readOnly
         className="h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 font-mono text-xs text-text-primary focus:border-accent focus:bg-bg-tertiary focus:outline-none transition-all duration-200"
       />
+
+      {/* Type category icon */}
+      {TypeIcon ? (
+        <TypeIcon size={14} className="text-text-muted" />
+      ) : (
+        <span className="w-[14px]" />
+      )}
 
       {/* Type selector */}
       <Select

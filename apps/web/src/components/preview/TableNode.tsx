@@ -51,12 +51,12 @@ export function TableNode({ data }: { data: TableNodeData }) {
   }, []);
 
   return (
-    <div ref={nodeRef} className="bg-bg-primary border border-border-subtle rounded-xl shadow-xl overflow-hidden min-w-[320px] max-w-[400px] font-sans text-sm transition-all duration-300 hover:shadow-accent/10 hover:border-accent/50 hover:scale-[1.02] cursor-grab active:cursor-grabbing group/node">
+    <div ref={nodeRef} className="bg-bg-primary border border-border-subtle rounded-xl shadow-sm overflow-hidden min-w-[320px] max-w-[400px] font-sans text-sm transition-all duration-300 hover:border-accent/50 cursor-grab active:cursor-grabbing group/node">
       {/* Top Handle for incoming connections */}
       <Handle type="target" position={Position.Top} className="!bg-border-subtle !w-2 !h-2 !border-bg-primary opacity-0 group-hover/node:opacity-100 transition-opacity" />
       
       {/* Header */}
-      <div className="bg-bg-secondary/80 backdrop-blur-sm px-4 py-3 border-b border-border-subtle flex items-center justify-between">
+      <div className="bg-bg-secondary px-4 py-3 border-b border-border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/10 text-accent">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -76,13 +76,13 @@ export function TableNode({ data }: { data: TableNodeData }) {
             <div className="flex items-center gap-2">
               <span className="font-medium text-text-secondary">{field.name}</span>
               {field.isPrimaryKey && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 drop-shadow-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
                   <title>Primary Key</title>
                   <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
                 </svg>
               )}
               {field.isForeignKey && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 drop-shadow-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
                   <title>Foreign Key</title>
                   <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                 </svg>
@@ -98,27 +98,27 @@ export function TableNode({ data }: { data: TableNodeData }) {
               position={Position.Right} 
               id={field.name} 
               className={`!w-2.5 !h-2.5 !border-2 !border-bg-primary !right-[-6px] transition-all hover:scale-125 ${
-                field.isForeignKey 
-                  ? '!bg-blue-500 opacity-60 group-hover:opacity-100' 
+                field.isForeignKey
+                  ? '!bg-accent opacity-60 group-hover:opacity-100'
                   : '!bg-border-subtle opacity-0 group-hover:opacity-40'
-              }`} 
+              }`}
             />
             <Handle 
               type="target" 
               position={Position.Left} 
               id={field.name} 
               className={`!w-2.5 !h-2.5 !border-2 !border-bg-primary !left-[-6px] transition-all hover:scale-125 ${
-                field.isPrimaryKey 
-                  ? '!bg-yellow-500 opacity-60 group-hover:opacity-100' 
+                field.isPrimaryKey
+                  ? '!bg-accent opacity-60 group-hover:opacity-100'
                   : '!bg-border-subtle opacity-0 group-hover:opacity-40'
-              }`} 
+              }`}
             />
           </div>
         ))}
       </div>
 
       {/* Sample Data */}
-      <div className="bg-bg-secondary/40 p-4">
+      <div className="bg-bg-secondary p-4">
         <p className="text-[10px] font-bold text-text-muted/80 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

@@ -160,8 +160,8 @@ export function PreviewCanvas() {
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#3f3f46" gap={16} size={1} />
-        <Controls 
-          className="bg-bg-tertiary border border-border-subtle shadow-xl rounded-xl overflow-hidden flex flex-col p-1 gap-1" 
+        <Controls
+          className="bg-bg-tertiary border border-border-subtle shadow-sm rounded-xl overflow-hidden flex flex-col p-1 gap-1"
           showInteractive={false}
         />
         <MiniMap 
@@ -179,7 +179,8 @@ export function PreviewCanvas() {
                 <path d="M3 10h18M3 14h18M3 6h18M3 18h18" strokeLinecap="round" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-text-secondary">No tables to preview</p>
+            <p className="text-sm font-medium text-text-secondary">No tables to preview yet</p>
+            <p className="text-xs mt-1.5 text-text-muted">Add a table to see its diagram here</p>
           </div>
         </div>
       )}

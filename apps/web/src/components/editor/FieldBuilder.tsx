@@ -273,9 +273,9 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
 
       {/* Type Picker Modal */}
       {openPickerIdx !== null && fields[openPickerIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/60 animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-2xl bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
+            className="w-full max-w-2xl bg-bg-secondary border border-border-subtle rounded-2xl shadow-lg flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-border-subtle">
@@ -297,7 +297,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search 80+ types..."
-                className="w-full rounded-xl border border-border-subtle bg-bg-secondary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+                className="w-full rounded-xl border border-border-subtle bg-bg-secondary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-all duration-200"
                 autoFocus
               />
             </div>
@@ -351,9 +351,9 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
 
       {/* Save Template Modal */}
       {isSaveModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/60 animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
+            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-lg flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-border-subtle">
@@ -372,7 +372,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                   type="text"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-all duration-200"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && templateName.trim()) {
@@ -399,7 +399,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                     }
                   }}
                   disabled={!templateName.trim()}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
                 >
                   Save
                 </button>
@@ -411,9 +411,9 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
 
       {/* Edit Options Modal */}
       {editModalIdx !== null && fields[editModalIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/60 animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-lg bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
+            className="w-full max-w-lg bg-bg-secondary border border-border-subtle rounded-2xl shadow-lg flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-bg-tertiary/30">
@@ -525,7 +525,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
             <div className="p-4 border-t border-border-subtle bg-bg-tertiary/30 flex justify-end">
               <button
                 onClick={() => setEditModalIdx(null)}
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20"
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors"
               >
                 Done
               </button>

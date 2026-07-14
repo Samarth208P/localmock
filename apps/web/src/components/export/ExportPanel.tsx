@@ -32,6 +32,15 @@ const FORMATS = [
   { id: 'ts', label: 'TS Array', Icon: IconPackage, desc: 'TypeScript constant' },
 ] as const;
 
+type FormatId = (typeof FORMATS)[number]['id'];
+
+const FORMAT_GROUPS: { label: string; ids: FormatId[] }[] = [
+  { label: 'Structured', ids: ['csv', 'json', 'jsonl', 'tsv'] },
+  { label: 'Database', ids: ['sql', 'cql', 'influx', 'firebase'] },
+  { label: 'Code', ids: ['msw', 'ts'] },
+  { label: 'Other', ids: ['custom', 'excel', 'xml', 'dbunit'] },
+];
+
 export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: ExportPanelProps) {
   const [sqlDialect, setSqlDialect] = useState<string>('postgres');
   const [isExporting, setIsExporting] = useState<string | null>(null);
@@ -235,85 +244,95 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
         </div>
       )}
 
-      {/* Format cards */}
-      <div className="space-y-2">
-        {FORMATS.map((f) => {
-          const isExpanded = expandedFormat === f.id;
+      {/* Format cards, grouped into labeled sections */}
+      <div className="space-y-5">
+        {FORMAT_GROUPS.map((group, groupIdx) => (
+          <div key={group.label} className={groupIdx > 0 ? 'border-t border-border-subtle/50 pt-4' : ''}>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+              {group.label}
+            </p>
+            <div className="space-y-2">
+              {group.ids.map((id) => {
+                const f = FORMATS.find((fmt) => fmt.id === id)!;
+                const isExpanded = expandedFormat === f.id;
 
-          return (
-            <div
-              key={f.id}
-              className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-                isExpanded
-                  ? 'border-accent/40 bg-accent/[0.03]'
-                  : 'border-border-subtle bg-bg-secondary hover:border-accent/30'
-              }`}
-            >
-              {/* Card header — clickable to expand */}
-              <button
-                onClick={() => setExpandedFormat(isExpanded ? null : f.id)}
-                disabled={isExporting !== null}
-                className="w-full flex items-center gap-3 p-3.5 text-left transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
-              >
-                <span className="text-text-muted flex-shrink-0 w-6 flex items-center justify-center">
-                  <f.Icon size={16} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary">{f.label}</p>
-                  <p className="text-[11px] text-text-muted">{f.desc}</p>
-                </div>
-                <span className={`text-xs text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                  ▾
-                </span>
-              </button>
-
-              {/* Expanded: confirm download inline */}
-              {isExpanded && (
-                <div className="animate-scale-in border-t border-border-subtle/50 px-3.5 pb-3.5 pt-3 space-y-3">
-                  <p className="text-xs text-text-muted">
-                    {rows.length.toLocaleString()} rows → <span className="font-mono text-text-secondary">localmock.{f.id === 'msw' ? 'handlers.ts' : f.id === 'ts' ? 'data.ts' : f.id}</span>
-                  </p>
-
-                  {/* SQL dialect picker (only for SQL) */}
-                  {f.id === 'sql' && (
-                    <div className="flex gap-1.5">
-                      {SQL_DIALECTS.map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setSqlDialect(d)}
-                          className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-all duration-200 ${
-                            sqlDialect === d
-                              ? 'bg-accent/15 text-accent ring-1 ring-accent/30'
-                              : 'bg-bg-tertiary text-text-muted hover:text-text-secondary'
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Download + Cancel */}
-                  <div className="flex gap-2">
+                return (
+                  <div
+                    key={f.id}
+                    className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+                      isExpanded
+                        ? 'border-accent/40 bg-accent/[0.03]'
+                        : 'border-border-subtle bg-bg-secondary hover:border-accent/30'
+                    }`}
+                  >
+                    {/* Card header — clickable to expand */}
                     <button
-                      onClick={() => doDownload(f.id)}
+                      onClick={() => setExpandedFormat(isExpanded ? null : f.id)}
                       disabled={isExporting !== null}
-                      className="flex-1 rounded-lg bg-accent py-2 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-hover active:scale-[0.98] disabled:opacity-60"
+                      className="w-full flex items-center gap-3 p-3.5 text-left transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
                     >
-                      {isExporting === f.id ? 'Downloading...' : `Download .${f.id === 'msw' ? 'ts' : f.id === 'ts' ? 'ts' : f.id}`}
+                      <span className="text-text-muted flex-shrink-0 w-6 flex items-center justify-center">
+                        <f.Icon size={16} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary">{f.label}</p>
+                        <p className="text-[11px] text-text-muted">{f.desc}</p>
+                      </div>
+                      <span className={`text-xs text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                        ▾
+                      </span>
                     </button>
-                    <button
-                      onClick={() => setExpandedFormat(null)}
-                      className="rounded-lg border border-border-subtle px-3 py-2 text-xs text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
-                    >
-                      Cancel
-                    </button>
+
+                    {/* Expanded: confirm download inline */}
+                    {isExpanded && (
+                      <div className="animate-scale-in border-t border-border-subtle/50 px-3.5 pb-3.5 pt-3 space-y-3">
+                        <p className="text-xs text-text-muted">
+                          {rows.length.toLocaleString()} rows → <span className="font-mono text-text-secondary">localmock.{f.id === 'msw' ? 'handlers.ts' : f.id === 'ts' ? 'data.ts' : f.id}</span>
+                        </p>
+
+                        {/* SQL dialect picker (only for SQL) */}
+                        {f.id === 'sql' && (
+                          <div className="flex gap-1.5">
+                            {SQL_DIALECTS.map((d) => (
+                              <button
+                                key={d}
+                                onClick={() => setSqlDialect(d)}
+                                className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-all duration-200 ${
+                                  sqlDialect === d
+                                    ? 'bg-accent/15 text-accent ring-1 ring-accent/30'
+                                    : 'bg-bg-tertiary text-text-muted hover:text-text-secondary'
+                                }`}
+                              >
+                                {d}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Download + Cancel */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => doDownload(f.id)}
+                            disabled={isExporting !== null}
+                            className="flex-1 rounded-lg bg-accent py-2 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-hover active:scale-[0.98] disabled:opacity-60"
+                          >
+                            {isExporting === f.id ? 'Downloading...' : `Download .${f.id === 'msw' ? 'ts' : f.id === 'ts' ? 'ts' : f.id}`}
+                          </button>
+                          <button
+                            onClick={() => setExpandedFormat(null)}
+                            className="rounded-lg border border-border-subtle px-3 py-2 text-xs text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );
