@@ -14,6 +14,7 @@ import { useMultiTableStore } from '@/store/multiTableStore';
 import { useWorkerPool, type MultiTableGenDef } from '@/hooks/useWorkerPool';
 import { sortTablesTopologically, type DependencyEdge } from '@/lib/topologicalSort';
 import { decodeSchemaFromUrl, encodeSchemaToUrl, clearSchemaFromUrl } from '@/lib/shareableUrl';
+import { usePageSeo } from '@/hooks/usePageSeo';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
 
@@ -22,6 +23,7 @@ function App() {
   const chaosStore = useChaosStore();
 
   const { step, setStep, goBack } = useAppStore();
+  usePageSeo(step);
   const multiTable = useMultiTableStore();
   const {
     generate,
@@ -184,10 +186,10 @@ function App() {
               <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
                 <div>
                   <h1 className="text-3xl sm:text-4xl font-bold text-text-primary tracking-tight mb-2">
-                    Define your data
+                    Free mock data generator
                   </h1>
                   <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-xl">
-                    Paste a schema from any language, or build fields manually with 80+ data types.
+                    Paste a Prisma, TypeScript, or JSON schema — or build fields manually with 80+ data types. Generate unlimited rows in your browser.
                   </p>
                 </div>
 

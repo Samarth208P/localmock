@@ -1,6 +1,6 @@
 /**
  * LocalMock Analytics Worker
- * Deployed to stats.localmock.in
+ * Deployed to stats.localmock.dev
  *
  * Endpoints:
  *   POST /increment  — { rows: number } — increment total generation count

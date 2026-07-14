@@ -1,5 +1,6 @@
 import { AnimatedLogo } from '@/components/shared/AnimatedLogo';
 import { StepIndicator } from '@/components/layout/StepIndicator';
+import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { useEffect } from 'react';
 
 export function Navbar() {
@@ -26,10 +27,14 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
-      <div className="flex items-center gap-3 lg:w-[200px]">
+      <a
+        href={SITE_URL}
+        className="flex items-center gap-3 lg:w-[200px] hover:opacity-90 transition-opacity"
+        aria-label={`${SITE_NAME} home`}
+      >
         <AnimatedLogo />
-        <span className="text-lg font-semibold text-text-primary hidden lg:block">LocalMock</span>
-      </div>
+        <span className="text-lg font-semibold text-text-primary hidden lg:block">{SITE_NAME}</span>
+      </a>
 
       <div className="flex-1 flex justify-center overflow-x-auto no-scrollbar">
         <StepIndicator />

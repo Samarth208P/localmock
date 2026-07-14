@@ -1,7 +1,14 @@
+import { SITE_URL } from '@/lib/site';
+
 export function Footer() {
   return (
     <footer className="flex items-center justify-between border-t border-border-subtle px-6 py-3 text-xs text-text-muted">
-      <span>LocalMock — Client-side data generation. No data leaves your browser.</span>
+      <span>
+        <a href={SITE_URL} className="hover:text-text-secondary transition-colors">
+          localmock.dev
+        </a>
+        {' — '}Client-side data generation. No data leaves your browser.
+      </span>
       <div className="flex items-center gap-4">
         <a
           href="https://github.com/Samarth208P/localmock"

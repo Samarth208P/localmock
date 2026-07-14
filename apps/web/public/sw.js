@@ -1,10 +1,13 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'localmock-v1';
+const CACHE_NAME = 'localmock-v2';
 const STATIC_ASSETS = [
   '/',
   '/localmock.svg',
   '/manifest.json',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/og-image.svg',
 ];
 
 // Install: pre-cache static assets

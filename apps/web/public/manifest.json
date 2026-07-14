@@ -1,8 +1,10 @@
 {
+  "id": "https://localmock.dev/",
   "name": "LocalMock",
   "short_name": "LocalMock",
   "description": "Generate unlimited mock data instantly in your browser. No signup, no limits, no server.",
-  "start_url": "/",
+  "start_url": "https://localmock.dev/",
+  "scope": "https://localmock.dev/",
   "display": "standalone",
   "background_color": "#0f0f12",
   "theme_color": "#6366f1",
@@ -15,6 +17,7 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["developer tools", "utilities"],
-  "lang": "en"
+  "categories": ["developer tools", "utilities", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
 }

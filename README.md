@@ -70,7 +70,7 @@ LocalMock is built for speed and developer experience.
 - **UI/Styling:** Tailwind CSS + shadcn/ui
 - **Persistence:** IndexedDB (via `idb-keyval`) for instant workspace recovery
 - **Web Workers:** Custom <50KB generators paired with a tree-shaken `@faker-js/faker`
-- **Hosting:** Netlify (Free Tier)
+- **Hosting:** Netlify — [localmock.dev](https://localmock.dev)
 
 **Repository Structure:**
 ```text
@@ -90,7 +90,7 @@ We use `pnpm` and Node `v22 LTS`.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/localmock.git
+   git clone https://github.com/Samarth208P/localmock.git
    cd localmock
    ```
 
@@ -105,7 +105,7 @@ We use `pnpm` and Node `v22 LTS`.
    ```
 
 4. **Open in browser:**
-   - App: `http://localhost:5173`
+   - App: `http://localhost:5173` (production: [https://localmock.dev](https://localmock.dev))
 
 ---
 

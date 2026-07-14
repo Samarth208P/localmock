@@ -211,7 +211,7 @@ LocalMock is a privacy-first, zero-latency data generation and chaos-testing uti
 ## 8. Deployment
 
 - **Platform:** Netlify (free tier)
-- **Domain:** `localmock.in`
+- **Domain:** `localmock.dev`
 - **App:** Netlify site for `apps/web` (React SPA)
 - **Marketing:** Netlify site for `apps/marketing` (Astro SSG)
 - Same GitHub repo, two Netlify sites

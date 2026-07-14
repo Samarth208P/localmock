@@ -8,4 +8,4 @@ id = "replace-with-your-kv-namespace-id"
 preview_id = "replace-with-your-preview-kv-namespace-id"
 
 [vars]
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://localmock.dev"
