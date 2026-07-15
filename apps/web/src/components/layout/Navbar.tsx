@@ -1,30 +1,8 @@
 import { AnimatedLogo } from '@/components/shared/AnimatedLogo';
 import { StepIndicator } from '@/components/layout/StepIndicator';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
-import { useEffect } from 'react';
 
 export function Navbar() {
-  useEffect(() => {
-    // Load Buy Me a Coffee widget script
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
-    script.setAttribute('data-name', 'bmc-button');
-    script.setAttribute('data-slug', 'samarth208p');
-    script.setAttribute('data-color', '#6366f1');
-    script.setAttribute('data-emoji', '');
-    script.setAttribute('data-font', 'Inter');
-    script.setAttribute('data-text', 'Buy me a coffee');
-    script.setAttribute('data-outline-color', '#2a2a2e');
-    script.setAttribute('data-font-color', '#fafafa');
-    script.setAttribute('data-coffee-color', '#818cf8');
-    script.async = true;
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
-
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
       <a
