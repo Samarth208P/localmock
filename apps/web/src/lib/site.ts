@@ -1,5 +1,9 @@
 export const SITE_URL = 'https://localmock.dev';
 export const SITE_NAME = 'LocalMock';
+export const SITE_SUPPORT_EMAIL = 'support@localmock.dev';
+export const SITE_FEATURE_REQUEST_EMAIL = 'samarth@localmock.in';
+export const SITE_LINKEDIN_URL = 'https://www.linkedin.com/company/localmock/';
+export const SITE_REDDIT_URL = 'https://www.reddit.com/user/localmock/';
 export const SITE_TAGLINE = 'Free Client-Side Mock Data Generator';
 export const SITE_DESCRIPTION =
   'Generate private mock data and test data in your browser. Build fake, sample, or dummy datasets, then export CSV, JSON, SQL, JSONL, MSW, and TypeScript.';

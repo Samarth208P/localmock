@@ -7,6 +7,15 @@ URL: https://localmock.dev/
 ## Key links
 
 - [LocalMock app](https://localmock.dev/): Free browser-based mock data and test data generator.
+- [CSV test data generator](https://localmock.dev/tools/csv-test-data-generator): Generate browser-private CSV test data.
+- [JSON mock data generator](https://localmock.dev/tools/json-mock-data-generator): Generate JSON mock data for APIs, docs, and tests.
+- [SQL seed data generator](https://localmock.dev/tools/sql-seed-data-generator): Generate SQL insert seed data for local databases.
+- [Mockaroo alternative](https://localmock.dev/mockaroo-alternative): Local-first comparison page for private test data generation.
+- [User mock data template](https://localmock.dev/templates/users): Generate user records for auth, admin, and CRM workflows.
+- [Product mock data template](https://localmock.dev/templates/products): Generate product catalog mock data.
+- [Order mock data template](https://localmock.dev/templates/orders): Generate order records for commerce testing.
+- [Invoice mock data template](https://localmock.dev/templates/invoices): Generate invoice data for billing workflows.
+- [API log mock data template](https://localmock.dev/templates/api-logs): Generate API log datasets for observability tests.
 - [Sitemap](https://localmock.dev/sitemap.xml): Canonical URL list for crawlers.
 - [Robots policy](https://localmock.dev/robots.txt): Search and AI crawler access rules.
 - [GitHub repository](https://github.com/Samarth208P/localmock): Source code and project details.

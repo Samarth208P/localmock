@@ -2,6 +2,10 @@ import { useEffect } from 'react';
 import { PAGE_SEO, SITE_NAME, SITE_OG_IMAGE, SITE_URL } from '@/lib/site';
 
 type AppStep = keyof typeof PAGE_SEO;
+interface SeoConfig {
+  title: string;
+  description: string;
+}
 
 function setMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
   let el = document.querySelector(`meta[${attribute}="${name}"]`);
@@ -26,9 +30,9 @@ function setCanonical(url: string) {
 /**
  * Updates document title, meta description, Open Graph, Twitter, and canonical URL per app step.
  */
-export function usePageSeo(step: AppStep) {
+export function usePageSeo(page: AppStep | SeoConfig) {
   useEffect(() => {
-    const seo = PAGE_SEO[step];
+    const seo = typeof page === 'string' ? PAGE_SEO[page] : page;
     const canonical = `${SITE_URL}${window.location.pathname}`;
 
     document.title = seo.title;
@@ -42,5 +46,5 @@ export function usePageSeo(step: AppStep) {
     setMeta('og:image', SITE_OG_IMAGE, 'property');
     setMeta('og:site_name', SITE_NAME, 'property');
     setCanonical(canonical);
-  }, [step]);
+  }, [page]);
 }

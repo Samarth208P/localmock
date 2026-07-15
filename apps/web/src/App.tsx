@@ -7,6 +7,7 @@ import { ColumnList } from '@/components/builder/ColumnList';
 import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
 import { ExportPanel } from '@/components/export/ExportPanel';
 import { ToastContainer } from '@/components/shared/Toast';
+import { LandingPage } from '@/components/seo/LandingPage';
 import { useSchemaStore } from '@/store/schemaStore';
 import { useChaosStore } from '@/store/chaosStore';
 import { useAppStore } from '@/store/appStore';
@@ -15,6 +16,7 @@ import { useWorkerPool, type MultiTableGenDef } from '@/hooks/useWorkerPool';
 import { sortTablesTopologically, type DependencyEdge } from '@/lib/topologicalSort';
 import { decodeSchemaFromUrl, encodeSchemaToUrl, clearSchemaFromUrl } from '@/lib/shareableUrl';
 import { usePageSeo } from '@/hooks/usePageSeo';
+import { LANDING_PAGES, findLandingPage } from '@/data/landingPages';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 import type { FieldDef } from '@/workers/generation.worker';
 
@@ -68,11 +70,12 @@ const faqItems = [
 ];
 
 function App() {
+  const landingPage = findLandingPage(window.location.pathname);
   const { parsedSchema, parseError } = useSchemaStore();
   const chaosStore = useChaosStore();
 
   const { step, setStep, goBack } = useAppStore();
-  usePageSeo(step);
+  usePageSeo(landingPage ? { title: landingPage.title, description: landingPage.description } : step);
   const multiTable = useMultiTableStore();
   const {
     generate,
@@ -222,6 +225,16 @@ function App() {
     if (hasSchema) setStep('configure');
   }, [hasSchema, setStep]);
 
+  if (landingPage) {
+    return (
+      <div className="flex min-h-screen flex-col bg-bg-primary">
+        <Navbar showSteps={false} />
+        <LandingPage page={landingPage} />
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <Navbar />
@@ -344,6 +357,23 @@ function App() {
                       <h3 className="text-base font-semibold text-text-primary">{item.question}</h3>
                       <p className="mt-2 text-sm leading-6 text-text-secondary">{item.answer}</p>
                     </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="mt-12" aria-labelledby="mock-data-tools">
+                <h2 id="mock-data-tools" className="text-2xl font-semibold tracking-tight text-text-primary">
+                  Mock data tools and templates
+                </h2>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {LANDING_PAGES.map((page) => (
+                    <a
+                      key={page.path}
+                      href={page.path}
+                      className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-2 text-sm text-text-secondary transition-colors hover:border-accent/50 hover:text-text-primary"
+                    >
+                      {page.h1}
+                    </a>
                   ))}
                 </div>
               </section>

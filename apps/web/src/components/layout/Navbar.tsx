@@ -2,7 +2,11 @@ import { AnimatedLogo } from '@/components/shared/AnimatedLogo';
 import { StepIndicator } from '@/components/layout/StepIndicator';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 
-export function Navbar() {
+interface NavbarProps {
+  showSteps?: boolean;
+}
+
+export function Navbar({ showSteps = true }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border-subtle bg-bg-primary/80 backdrop-blur-sm px-6">
       <a
@@ -15,7 +19,7 @@ export function Navbar() {
       </a>
 
       <div className="flex-1 flex justify-center overflow-x-auto no-scrollbar">
-        <StepIndicator />
+        {showSteps && <StepIndicator />}
       </div>
 
       <nav className="flex items-center gap-4 lg:w-[200px] justify-end">

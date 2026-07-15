@@ -5,8 +5,8 @@
   "type": "module",
   "description": "WASM engine for LocalMock hot loops - built with wasm-pack from Rust",
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir pkg",
-    "build:bundler": "wasm-pack build --target bundler --out-dir pkg",
+    "build": "node -e \"const { spawnSync } = require('child_process'); const fs = require('fs'); const path = require('path'); const cargo = spawnSync('cargo', ['--version'], { stdio: 'ignore' }); const wasmPack = spawnSync('wasm-pack', ['--version'], { stdio: 'ignore' }); if (cargo.status !== 0 || wasmPack.status !== 0) { fs.mkdirSync('pkg', { recursive: true }); fs.writeFileSync(path.join('pkg', 'localmock_wasm.js'), 'export default async function init() {}\\nexport const wasmEngine = {};\\n'); fs.writeFileSync(path.join('pkg', 'localmock_wasm.d.ts'), 'export declare function init(): Promise<void>;\\nexport declare const wasmEngine: Record<string, unknown>;\\n'); console.log('Skipping wasm build: Rust or wasm-pack is not installed.'); process.exit(0); } const result = spawnSync('wasm-pack', ['build', '--target', 'web', '--out-dir', 'pkg'], { stdio: 'inherit' }); process.exit(result.status ?? 0);\"",
+    "build:bundler": "node -e \"const { spawnSync } = require('child_process'); const fs = require('fs'); const path = require('path'); const cargo = spawnSync('cargo', ['--version'], { stdio: 'ignore' }); const wasmPack = spawnSync('wasm-pack', ['--version'], { stdio: 'ignore' }); if (cargo.status !== 0 || wasmPack.status !== 0) { fs.mkdirSync('pkg', { recursive: true }); fs.writeFileSync(path.join('pkg', 'localmock_wasm.js'), 'export default async function init() {}\\nexport const wasmEngine = {};\\n'); fs.writeFileSync(path.join('pkg', 'localmock_wasm.d.ts'), 'export declare function init(): Promise<void>;\\nexport declare const wasmEngine: Record<string, unknown>;\\n'); console.log('Skipping wasm bundler build: Rust or wasm-pack is not installed.'); process.exit(0); } const result = spawnSync('wasm-pack', ['build', '--target', 'bundler', '--out-dir', 'pkg'], { stdio: 'inherit' }); process.exit(result.status ?? 0);\"",
     "clean": "rm -rf pkg target"
   },
   "files": ["pkg"],
