@@ -34,7 +34,7 @@ export const SITE_KEYWORDS = [
   'chaos testing data',
 ].join(', ');
 
-export const SITE_OG_IMAGE = `${SITE_URL}/og-image.svg`;
+export const SITE_OG_IMAGE = `${SITE_URL}/og-image.png`;
 export const SITE_TWITTER_HANDLE = '@localmockdev';
 
 export const PAGE_SEO = {

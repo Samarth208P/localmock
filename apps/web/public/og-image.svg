@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="LocalMock  Free client-side mock data generator">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="LocalMock: Free client-side mock data generator">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0f0f12"/>
@@ -13,7 +13,7 @@
   <rect x="80" y="80" width="1040" height="470" rx="28" fill="#16161c" stroke="#2a2a2e" stroke-width="2"/>
   <text x="120" y="220" fill="#fafafa" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="72" font-weight="700">LocalMock</text>
   <text x="120" y="290" fill="#a1a1aa" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="34" font-weight="500">Free client-side mock data generator</text>
-  <text x="120" y="360" fill="#d4d4d8" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="26">Unlimited rows · CSV, JSON, SQL · No signup · 100% private</text>
+  <text x="120" y="360" fill="#d4d4d8" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="26">Unlimited rows &#183; CSV, JSON, SQL &#183; No signup &#183; 100% private</text>
   <rect x="120" y="410" width="280" height="56" rx="14" fill="url(#accent)"/>
   <text x="150" y="447" fill="#ffffff" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="24" font-weight="600">localmock.dev</text>
 </svg>
