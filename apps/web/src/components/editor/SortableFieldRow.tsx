@@ -30,12 +30,12 @@ export function SortableFieldRow({ id, isExpanded, hideHandle, children }: Sorta
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative animate-in rounded-xl border transition-[border-color,background-color,box-shadow,opacity] duration-200 ${
+      className={`relative animate-in rounded-xl border transition-[border-color,background-color,box-shadow,opacity,transform] duration-200 ${
         isDragging 
-          ? 'border-accent shadow-xl shadow-accent/10 bg-bg-secondary cursor-grabbing' 
+          ? 'border-accent shadow-xl shadow-accent/10 bg-bg-secondary cursor-grabbing scale-[1.01]' 
           : isExpanded 
             ? 'border-accent/30 bg-accent/[0.02]' 
-            : 'border-border-subtle bg-bg-secondary hover:border-border-active'
+            : 'border-border-subtle bg-bg-secondary hover:border-border-active hover:shadow-sm'
       }`}
     >
       <div className="flex w-full items-stretch">

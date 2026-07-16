@@ -34,24 +34,26 @@ export function StepIndicator() {
               disabled={!isClickable}
               className={`flex items-center gap-2.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-300 ${
                 isActive
-                  ? 'bg-accent/15 text-accent ring-1 ring-accent/30 shadow-sm'
+                  ? 'bg-accent/15 text-accent ring-1 ring-accent/30 shadow-sm scale-105'
                   : isCompleted
-                    ? 'text-text-primary hover:bg-bg-tertiary cursor-pointer'
+                    ? 'text-text-primary hover:bg-bg-tertiary hover:scale-105 cursor-pointer'
                     : 'text-text-muted cursor-not-allowed opacity-60'
               }`}
             >
               <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] transition-colors duration-300 ${
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] transition-all duration-300 ${
                   isActive
-                    ? 'bg-accent text-white shadow-md shadow-accent/20'
+                    ? 'bg-accent text-white shadow-md shadow-accent/20 scale-110'
                     : isCompleted
                       ? 'bg-success/20 text-success'
                       : 'bg-bg-tertiary border border-border-subtle text-text-muted'
                 }`}
               >
-                {isCompleted ? '✓' : s.number}
+                <span className={isCompleted ? 'animate-scale-in inline-block' : 'inline-block'}>
+                  {isCompleted ? '✓' : s.number}
+                </span>
               </span>
-              <span className={`${isActive ? 'opacity-100' : 'opacity-80'}`}>{s.label}</span>
+              <span className={`transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-80'}`}>{s.label}</span>
             </button>
 
             {idx < STEPS.length - 1 && (

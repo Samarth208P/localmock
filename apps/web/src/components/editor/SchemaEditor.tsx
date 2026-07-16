@@ -82,9 +82,70 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in duration-200">
-      {/* Main Workspace */}
-      <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-4">
+    <div className="animate-in fade-in duration-200 space-y-6">
+      {/* Inline horizontal tabs */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setMode('build')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            mode === 'build'
+              ? 'bg-accent/10 text-accent border border-accent/30 shadow-sm'
+              : 'bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-accent/30'
+          }`}
+        >
+          <IconWrench size={14} />
+          Builder
+        </button>
+        <button
+          onClick={() => setMode('paste')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            mode === 'paste'
+              ? 'bg-accent/10 text-accent border border-accent/30 shadow-sm'
+              : 'bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-accent/30'
+          }`}
+        >
+          <IconClipboard size={14} />
+          Paste Schema
+        </button>
+        <button
+          onClick={() => setMode('multi-table')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            mode === 'multi-table'
+              ? 'bg-accent/10 text-accent border border-accent/30 shadow-sm'
+              : 'bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-accent/30'
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
+          </svg>
+          Multi-Table
+        </button>
+        <button
+          onClick={() => setMode('template')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            mode === 'template'
+              ? 'bg-accent/10 text-accent border border-accent/30 shadow-sm'
+              : 'bg-bg-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:border-accent/30'
+          }`}
+        >
+          <IconFileText size={14} />
+          Templates
+        </button>
+
+        {/* Generate CTA — right-aligned */}
+        {hasSchema && onGenerate && (
+          <button
+            onClick={onGenerate}
+            className="btn-press ml-auto inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30"
+          >
+            Configure & Generate
+            <span className="text-base leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
+          </button>
+        )}
+      </div>
+
+      {/* Content area */}
+      <div>
         {mode === 'build' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="mb-4 flex items-center justify-between">
@@ -177,88 +238,50 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
                 </div>
               )}
             </div>
+
+            {/* Live parsed schema preview */}
+            {parsedSchema && parsedSchema.tables.length > 0 && (
+              <div className="animate-in mt-4 rounded-xl border border-accent/20 bg-accent/[0.03] p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                  <span className="text-[11px] font-bold text-success uppercase tracking-wider">Schema parsed</span>
+                  <span className="text-[11px] text-text-muted ml-auto">
+                    {parsedSchema.tables.length} table{parsedSchema.tables.length > 1 ? 's' : ''} · {parsedSchema.tables.reduce((sum, t) => sum + t.columns.length, 0)} fields detected
+                  </span>
+                </div>
+                {parsedSchema.tables.map((table) => (
+                  <div key={table.name} className="mt-2">
+                    {parsedSchema.tables.length > 1 && (
+                      <p className="text-xs font-medium text-text-primary mb-1.5 font-mono">{table.name}</p>
+                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {table.columns.slice(0, 12).map((col) => (
+                        <span
+                          key={col.id}
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-mono border ${
+                            col.confidence === 'high'
+                              ? 'border-success/20 bg-success/5 text-success'
+                              : col.confidence === 'medium'
+                                ? 'border-warning/20 bg-warning/5 text-warning'
+                                : 'border-border-subtle bg-bg-tertiary text-text-muted'
+                          }`}
+                        >
+                          <span className="text-text-primary font-medium">{col.name}</span>
+                          <span className="opacity-60">:{col.type}</span>
+                        </span>
+                      ))}
+                      {table.columns.length > 12 && (
+                        <span className="inline-flex items-center rounded-md px-2 py-1 text-[11px] border border-border-subtle bg-bg-tertiary text-text-muted">
+                          +{table.columns.length - 12} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </div>
-
-      {/* Sidebar */}
-      <div className="lg:col-span-4 xl:col-span-3 space-y-8 border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0 lg:pl-8">
-        <div>
-          <h3 className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
-            Input Methods
-          </h3>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => setMode('build')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'build'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'build' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconWrench size={16} />
-              </div>
-              <span className="text-sm font-medium">Builder</span>
-            </button>
-
-            <button
-              onClick={() => setMode('paste')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'paste'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'paste' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconClipboard size={16} />
-              </div>
-              <span className="text-sm font-medium">Paste Schema</span>
-            </button>
-
-            <button
-              onClick={() => setMode('multi-table')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'multi-table'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'multi-table' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="10" y1="6.5" x2="14" y2="6.5" /><line x1="6.5" y1="10" x2="6.5" y2="14" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium">Multi-Table Setup</span>
-            </button>
-
-            <button
-              onClick={() => setMode('template')}
-              className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                mode === 'template'
-                  ? 'border-accent bg-accent/5 text-accent shadow-sm'
-                  : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-accent/40 hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${mode === 'template' ? 'bg-accent/10 text-accent' : 'bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent'} transition-colors`}>
-                <IconFileText size={16} />
-              </div>
-              <span className="text-sm font-medium">Templates</span>
-            </button>
-          </div>
-          
-          {hasSchema && onGenerate && (
-            <div className="mt-12">
-              <button
-                onClick={onGenerate}
-                className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
-              >
-                <span className="whitespace-nowrap">Configure</span>
-                <span className="text-lg leading-none transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

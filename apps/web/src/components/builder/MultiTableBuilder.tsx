@@ -1,6 +1,7 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { useMultiTableStore } from '@/store/multiTableStore';
 import { FieldBuilder, type FieldRow } from '@/components/editor/FieldBuilder';
+import { Modal } from '@/components/shared/Modal';
 
 export function MultiTableBuilder() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -18,17 +19,6 @@ export function MultiTableBuilder() {
     addForeignKey,
     removeForeignKey,
   } = useMultiTableStore();
-
-  useEffect(() => {
-    if (isCreateModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isCreateModalOpen]);
 
   const activeTable = tables.find((t) => t.id === activeTableId);
 
@@ -67,14 +57,15 @@ export function MultiTableBuilder() {
       {/* Table tabs */}
       {tables.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {tables.map((table) => (
+          {tables.map((table, idx) => (
           <button
             key={table.id}
             onClick={() => setActiveTable(table.id)}
-            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${
+            style={{ '--stagger-delay': `${idx * 40}ms` } as React.CSSProperties}
+            className={`btn-press animate-stagger-in shrink-0 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${
               table.id === activeTableId
-                ? 'bg-accent/15 text-accent ring-1 ring-accent/30'
-                : 'bg-bg-tertiary text-text-muted hover:text-text-secondary'
+                ? 'bg-accent/15 text-accent ring-1 ring-accent/30 scale-105'
+                : 'bg-bg-tertiary text-text-muted hover:text-text-secondary hover:bg-bg-tertiary/70'
             }`}
           >
             {table.name}
@@ -85,9 +76,10 @@ export function MultiTableBuilder() {
               setNewTableName('new_table');
               setIsCreateModalOpen(true);
             }}
-            className="shrink-0 rounded-lg border border-dashed border-border-subtle px-3 py-2 text-xs text-text-muted hover:border-accent/40 hover:text-accent transition-all duration-200"
+            className="btn-press group shrink-0 rounded-lg border border-dashed border-border-subtle px-3 py-2 text-xs text-text-muted hover:border-accent/40 hover:text-accent hover:bg-accent/[0.03] transition-all duration-200"
           >
-            + Add Table
+            <span className="inline-block transition-transform duration-200 group-hover:rotate-90 mr-1">+</span>
+            Add Table
           </button>
         </div>
       )}
@@ -184,7 +176,7 @@ export function MultiTableBuilder() {
               setNewTableName('users');
               setIsCreateModalOpen(true);
             }}
-            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-200 hover:bg-accent-hover hover:-translate-y-0.5 active:scale-95"
+            className="btn-press rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-200 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30"
           >
             + Create First Table
           </button>
@@ -192,62 +184,54 @@ export function MultiTableBuilder() {
       )}
 
       {/* Create Table Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-              <h3 className="text-lg font-semibold text-text-primary">Create Table</h3>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">Table Name</label>
-                <input
-                  type="text"
-                  value={newTableName}
-                  onChange={(e) => setNewTableName(e.target.value)}
-                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTableName.trim()) {
-                      addTable(newTableName.trim());
-                      setIsCreateModalOpen(false);
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (newTableName.trim()) {
-                      addTable(newTableName.trim());
-                      setIsCreateModalOpen(false);
-                    }
-                  }}
-                  disabled={!newTableName.trim()}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
-                >
-                  Create
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        maxWidth="max-w-sm"
+        title="Create Table"
+        footer={
+          <div className="flex justify-end gap-3 p-4">
+            <button
+              onClick={() => setIsCreateModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (newTableName.trim()) {
+                  addTable(newTableName.trim());
+                  setIsCreateModalOpen(false);
+                }
+              }}
+              disabled={!newTableName.trim()}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
+            >
+              Create
+            </button>
+          </div>
+        }
+      >
+        <div className="p-5 space-y-4">
+          <div>
+            <label htmlFor="new-table-name-input" className="block text-sm font-medium text-text-primary mb-1.5">Table Name</label>
+            <input
+              id="new-table-name-input"
+              type="text"
+              value={newTableName}
+              onChange={(e) => setNewTableName(e.target.value)}
+              className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTableName.trim()) {
+                  addTable(newTableName.trim());
+                  setIsCreateModalOpen(false);
+                }
+              }}
+            />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

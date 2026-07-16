@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SQL_DIALECTS } from '@/lib/constants';
+import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 import { serializeCSV, serializeJSON, serializeJSONL, serializeSQL, serializeMSW, serializeTSArray, serializeTSV, serializeCassandraCQL, serializeFirebase, serializeInfluxDB, serializeXML, serializeDBUnitXML, serializeExcelXML, serializeCustom } from '@localmock/core/exports';
 import { supportsFileSystemAccess } from '@/lib/browserDetect';
 import { showToast } from '@/components/shared/Toast';
@@ -177,12 +178,28 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
     }
   };
 
+  if (rows.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-text-primary">Download</h3>
+          <p className="mt-1 text-xs text-text-muted">Waiting for data...</p>
+        </div>
+        <div className="space-y-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="processing h-[52px] rounded-xl border border-border-subtle bg-bg-secondary" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-medium text-text-primary">Download</h3>
         <p className="mt-1 text-xs text-text-muted">
-          {rows.length.toLocaleString()} rows ready
+          <AnimatedCounter value={rows.length} duration={0.5} /> rows ready
         </p>
       </div>
 
@@ -190,7 +207,7 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
       {rows.length > 0 && rows.length <= 100 && (
         <button
           onClick={doCopy}
-          className="w-full flex items-center justify-center gap-2 rounded-lg border border-border-subtle bg-bg-secondary py-2.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:border-accent/40 hover:bg-accent/[0.03] transition-all duration-200 active:scale-[0.98]"
+          className="btn-press w-full flex items-center justify-center gap-2 rounded-lg border border-border-subtle bg-bg-secondary py-2.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:border-accent/40 hover:bg-accent/[0.03] transition-all duration-200"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -237,16 +254,17 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
 
       {/* Format cards */}
       <div className="space-y-2">
-        {FORMATS.map((f) => {
+        {FORMATS.map((f, idx) => {
           const isExpanded = expandedFormat === f.id;
 
           return (
             <div
               key={f.id}
-              className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+              style={{ '--stagger-delay': `${idx * 30}ms` } as React.CSSProperties}
+              className={`animate-stagger-in rounded-xl border transition-all duration-200 overflow-hidden ${
                 isExpanded
-                  ? 'border-accent/40 bg-accent/[0.03]'
-                  : 'border-border-subtle bg-bg-secondary hover:border-accent/30'
+                  ? 'border-accent/40 bg-accent/[0.03] shadow-md shadow-accent/5'
+                  : 'border-border-subtle bg-bg-secondary hover:border-accent/30 hover:-translate-y-0.5 hover:shadow-sm'
               }`}
             >
               {/* Card header — clickable to expand */}

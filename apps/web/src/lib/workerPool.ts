@@ -7,6 +7,7 @@
  */
 
 import type { FieldDef, WorkerOutMessage } from '@/workers/generation.worker';
+import type { ChaosConfig } from '@localmock/core/chaos';
 
 export interface PoolProgress {
   generated: number;
@@ -21,6 +22,7 @@ export interface WorkerPoolOptions {
   onPartial?: (rows: Record<string, unknown>[]) => void;
   maxWorkers?: number;
   relationalContext?: Record<string, unknown[]>;
+  globalChaos?: ChaosConfig;
 }
 
 export interface WorkerPoolResult {
@@ -51,7 +53,7 @@ function splitWork(total: number, chunks: number): number[] {
  * Run generation across a pool of workers in parallel.
  */
 export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolResult> {
-  const { fields, rowCount, onProgress, onPartial, maxWorkers, relationalContext } = options;
+  const { fields, rowCount, onProgress, onPartial, maxWorkers, relationalContext, globalChaos } = options;
   const workerCount = getWorkerCount(maxWorkers);
   const chunks = splitWork(rowCount, workerCount);
   const start = performance.now();
@@ -132,6 +134,7 @@ export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolRes
         fields,
         rowCount: chunks[i],
         relationalContext,
+        globalChaos,
       });
     }
   });

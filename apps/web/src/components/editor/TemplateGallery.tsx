@@ -108,11 +108,12 @@ export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
 
       {/* Template grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
-        {filtered.map((template) => (
+        {filtered.map((template, idx) => (
           <button
             key={template.name}
             onClick={() => handleSelect(template)}
-            className="relative group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-200 hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-sm"
+            style={{ '--stagger-delay': `${Math.min(idx, 12) * 35}ms` } as React.CSSProperties}
+            className="card-interactive animate-stagger-in relative group rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left hover:border-accent/40 hover:bg-accent/[0.03]"
           >
             {template.description === 'Saved Custom Template' && (
               <div className="absolute top-4 right-4">

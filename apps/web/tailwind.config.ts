@@ -10,6 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Kept in sync with the CSS variables in src/index.css — neutral black theme.
         bg: {
           primary: '#0a0a0b',
           secondary: '#141416',
@@ -35,7 +36,7 @@ const config: Config = {
         info: '#3b82f6',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       borderRadius: {

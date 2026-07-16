@@ -1,29 +1,29 @@
-# LocalMock Design System (Black-Purple Theme)
+# LocalMock Design System (Neutral Black Theme)
 
 This document outlines the core aesthetics, color palette, and styling principles for the LocalMock frontend. This ensures a consistent, premium, and "cool" look across all pages and components.
 
 ## 🎨 1. Core Color Palette
 
-Our aesthetic is built on a very deep, almost black, purple background with vibrant purple accents. This provides a sleek, modern, and developer-focused "dark mode native" experience.
+Our aesthetic is built on a neutral, near-black background with a vibrant indigo accent. This provides a sleek, modern, and developer-focused "dark mode native" experience without tinting the neutrals.
 
 ### Backgrounds
-- **Primary Background:** `#0a050f` - Used for the main body/app canvas.
-- **Secondary Background:** `#120a1a` - Used for sidebars, panels, or elevated sections.
-- **Tertiary Background:** `#1e112a` - Used for cards, modals, or active list items.
+- **Primary Background:** `#0a0a0b` - Used for the main body/app canvas.
+- **Secondary Background:** `#141416` - Used for sidebars, panels, or elevated sections.
+- **Tertiary Background:** `#1c1c1f` - Used for cards, modals, or active list items.
 
 ### Accents
-- **Primary Accent (Indigo/Blue-Purple):** `#6366f1` - Used for primary buttons, active states, checkboxes, and the main logo/favicon.
+- **Primary Accent (Indigo):** `#6366f1` - Used for primary buttons, active states, checkboxes, and the main logo/favicon.
 - **Accent Hover:** `#818cf8` - A lighter, softer indigo used for hover states on primary elements.
 - **Subtle Accent:** `rgba(99, 102, 241, 0.1)` - A highly transparent indigo used for subtle background highlights on list items or inactive button states.
 
 ### Text & Typography
 - **Primary Text:** `#fafafa` - High-contrast white for primary headings and body text.
-- **Secondary Text:** `#d8c3ed` - A soft, desaturated purple-tinted white for subtitles and secondary information.
-- **Muted Text:** `#8e73ab` - Used for placeholders, disabled states, and very subtle metadata.
+- **Secondary Text:** `#a1a1aa` - Neutral gray for subtitles and secondary information.
+- **Muted Text:** `#71717a` - Used for placeholders, disabled states, and very subtle metadata.
 
 ### Borders
-- **Subtle Border:** `#2d1b40` - Used for standard dividers, card borders, and input outlines.
-- **Active Border:** `#6366f1` - Used when an input is focused or a card is actively selected.
+- **Subtle Border:** `#2a2a2e` - Used for standard dividers, card borders, and input outlines.
+- **Active Border:** `#3a3a40` (or `#6366f1` accent when focused) - Used when an input is focused or a card is actively selected.
 
 ---
 

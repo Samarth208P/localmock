@@ -36,10 +36,10 @@ export function ToastContainer() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`animate-slide-up rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg backdrop-blur-sm ${
+          className={`animate-slide-up rounded-xl px-4 py-2.5 text-sm font-medium shadow-xl backdrop-blur-md border ${
             t.type === 'success'
-              ? 'bg-green-500/90 text-white'
-              : 'bg-error/90 text-white'
+              ? 'bg-success/90 text-white border-success/50'
+              : 'bg-error/90 text-white border-error/50'
           }`}
         >
           {t.text}

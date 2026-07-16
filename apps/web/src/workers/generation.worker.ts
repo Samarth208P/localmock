@@ -12,6 +12,7 @@
  */
 
 import { generateTypedValue, createCtx } from '@localmock/core/generators';
+import { applyChaos, type ChaosConfig } from '@localmock/core/chaos';
 
 // --- Message types ---
 
@@ -22,6 +23,10 @@ export interface FieldDef {
   unique: boolean;
   /** If set, this field draws values from relationalContext[foreignKeyRef] instead of generating */
   foreignKeyRef?: string;
+  /** Probability (0-100) that this field's value is nulled out */
+  nullPercentage?: number;
+  /** Per-field chaos corruption override; falls back to globalChaos if unset */
+  chaos?: ChaosConfig;
 }
 
 export interface GenerateMessage {
@@ -30,6 +35,8 @@ export interface GenerateMessage {
   rowCount: number;
   /** Maps "tableName.fieldName" -> array of values from parent tables */
   relationalContext?: Record<string, unknown[]>;
+  /** Global chaos corruption applied to fields without their own override */
+  globalChaos?: ChaosConfig;
 }
 
 export interface GenerateResult {
@@ -64,7 +71,7 @@ const PARTIAL_PREVIEW_SIZE = 10;
 // --- Worker handler ---
 
 self.onmessage = (event: MessageEvent<GenerateMessage>) => {
-  const { fields, rowCount, relationalContext } = event.data;
+  const { fields, rowCount, relationalContext, globalChaos } = event.data;
 
   try {
     const rows: Record<string, unknown>[] = [];
@@ -132,6 +139,19 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
           seen.add(value);
         } else {
           value = generateTypedValue(field.typeId, opts, ctx);
+        }
+
+        // Null-percentage injection (per-field, independent of chaos engine)
+        if (!field.foreignKeyRef && field.nullPercentage && field.nullPercentage > 0) {
+          if (Math.random() * 100 < field.nullPercentage) {
+            value = null;
+          }
+        }
+
+        // Chaos corruption: per-field override takes priority over the global rate
+        const activeChaos = field.chaos ?? globalChaos;
+        if (!field.foreignKeyRef && value !== null && activeChaos && activeChaos.rate > 0) {
+          value = applyChaos(value, activeChaos);
         }
 
         row[field.name] = value;

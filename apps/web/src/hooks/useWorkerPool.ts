@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 import { runWorkerPool, getWorkerCount, type PoolProgress } from '@/lib/workerPool';
 import type { FieldDef } from '@/workers/generation.worker';
+import type { ChaosConfig } from '@localmock/core/chaos';
 
 interface UseWorkerPoolReturn {
-  generate: (fields: FieldDef[], rowCount: number) => void;
-  generateMultiTable: (tables: MultiTableGenDef[]) => void;
+  generate: (fields: FieldDef[], rowCount: number, globalChaos?: ChaosConfig) => void;
+  generateMultiTable: (tables: MultiTableGenDef[], globalChaos?: ChaosConfig) => void;
   rows: Record<string, unknown>[];
   multiTableRows: Record<string, Record<string, unknown>[]>;
   activeViewTable: string | null;
@@ -45,7 +46,7 @@ export function useWorkerPool(): UseWorkerPoolReturn {
   const workerCount = getWorkerCount();
 
   // Single table generation (original API)
-  const generate = useCallback((fields: FieldDef[], rowCount: number) => {
+  const generate = useCallback((fields: FieldDef[], rowCount: number, globalChaos?: ChaosConfig) => {
     setIsGenerating(true);
     setProgress(0);
     setError(null);
@@ -58,6 +59,7 @@ export function useWorkerPool(): UseWorkerPoolReturn {
     runWorkerPool({
       fields,
       rowCount,
+      globalChaos,
       onProgress: (p: PoolProgress) => {
         if (!abortRef.current) {
           setProgress(p.percent);
@@ -86,7 +88,7 @@ export function useWorkerPool(): UseWorkerPoolReturn {
   }, []);
 
   // Multi-table relational generation
-  const generateMultiTable = useCallback(async (tables: MultiTableGenDef[]) => {
+  const generateMultiTable = useCallback(async (tables: MultiTableGenDef[], globalChaos?: ChaosConfig) => {
     setIsGenerating(true);
     setProgress(0);
     setError(null);
@@ -128,6 +130,7 @@ export function useWorkerPool(): UseWorkerPoolReturn {
           fields: fieldsWithFKRef,
           rowCount: tableDef.rowCount,
           relationalContext: Object.keys(relationalContext).length > 0 ? relationalContext : undefined,
+          globalChaos,
           onProgress: (p: PoolProgress) => {
             if (!abortRef.current) {
               const tableProgress = (generatedSoFar + (p.generated || 0)) / totalRows;

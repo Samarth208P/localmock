@@ -9,18 +9,22 @@ export function QuickStartCards({ onSelect }: QuickStartCardsProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {templates.map((template) => (
+      {templates.map((template, idx) => (
         <button
           key={template.name}
           onClick={() => onSelect(template.schema)}
-          className="group relative rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left transition-all duration-300 ease-out hover:border-accent/40 hover:bg-accent/[0.03] hover:shadow-md hover:shadow-accent/5"
+          style={{ '--stagger-delay': `${idx * 70}ms` } as React.CSSProperties}
+          className="card-interactive animate-stagger-in group relative rounded-xl border border-border-subtle bg-bg-secondary p-4 text-left hover:border-accent/40 hover:bg-accent/[0.03]"
         >
-          <p className="text-sm font-medium text-text-primary group-hover:text-accent transition-colors duration-200">
+          <p className="text-sm font-medium text-text-primary transition-colors duration-200 group-hover:text-accent">
             {template.name}
           </p>
           <p className="mt-1.5 text-xs text-text-muted leading-relaxed">
             {template.description}
           </p>
+          <span className="absolute right-3 bottom-3 text-accent opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 text-xs">
+            →
+          </span>
         </button>
       ))}
     </div>

@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DATA_TYPE_CATEGORIES, ALL_DATA_TYPES, findDataType, type DataTypeOption } from '@/lib/dataTypes';
 import { useSchemaStore } from '@/store/schemaStore';
+import { useChaosStore, type ColumnChaosConfig } from '@/store/chaosStore';
 import { CATEGORY_ICONS } from '@/components/shared/Icons';
 import { Select } from '@/components/shared/Select';
+import { showToast } from '@/components/shared/Toast';
 import {
   DndContext,
   closestCenter,
@@ -20,6 +22,7 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableFieldRow } from './SortableFieldRow';
 import { saveToHistory } from '@/lib/schemaHistory';
+import { Modal } from '@/components/shared/Modal';
 
 export interface FieldRow {
   id: string;
@@ -35,8 +38,17 @@ interface FieldBuilderProps {
   initialFields?: FieldRow[];
 }
 
+const CHAOS_TYPE_LABELS: { key: keyof ColumnChaosConfig; label: string }[] = [
+  { key: 'nullRate', label: 'Null injection' },
+  { key: 'whitespace', label: 'Whitespace chaos' },
+  { key: 'encoding', label: 'Encoding stress' },
+  { key: 'casing', label: 'Mixed casing' },
+  { key: 'formatStrip', label: 'Format stripping' },
+];
+
 export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProps) {
   const { setParsedSchema } = useSchemaStore();
+  const { globalRate: chaosGlobalRate, columnOverrides, setColumnOverride } = useChaosStore();
   const [fields, setFields] = useState<FieldRow[]>(initialFields && initialFields.length > 0 ? initialFields : [
     { id: crypto.randomUUID(), name: 'id', typeId: 'uuid', options: {}, unique: true },
     { id: crypto.randomUUID(), name: 'name', typeId: 'fullName', options: {}, unique: false },
@@ -56,17 +68,20 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
     }
   }, []);
 
-  // Disable background scrolling when any modal is open
+  // Listen for global keyboard shortcuts (Ctrl+N add field, Ctrl+S save template)
   useEffect(() => {
-    if (openPickerIdx !== null || isSaveModalOpen || editModalIdx !== null) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
+    const onAddField = () => addField();
+    const onSaveTemplate = () => {
+      setTemplateName('My Custom Template');
+      setIsSaveModalOpen(true);
     };
-  }, [openPickerIdx, isSaveModalOpen, editModalIdx]);
+    window.addEventListener('shortcut-add-field', onAddField);
+    window.addEventListener('shortcut-save-template', onSaveTemplate);
+    return () => {
+      window.removeEventListener('shortcut-add-field', onAddField);
+      window.removeEventListener('shortcut-save-template', onSaveTemplate);
+    };
+  }, [fields]);
 
   const updateAndCommit = useCallback((newFields: FieldRow[]) => {
     setFields(newFields);
@@ -202,25 +217,25 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 onClick={() => {
                   setOpenPickerIdx(openPickerIdx === idx ? null : idx);
                 }}
-                className={`h-8 flex-1 flex items-center gap-2 rounded-lg border px-2.5 text-left text-xs transition-all duration-200 ${
+                className={`btn-press h-8 flex-1 flex items-center gap-2 rounded-lg border px-2.5 text-left text-xs transition-all duration-200 ${
                   openPickerIdx === idx
-                    ? 'border-accent bg-accent/[0.04]'
+                    ? 'border-accent bg-accent/[0.04] shadow-sm shadow-accent/10'
                     : 'border-border-subtle bg-bg-tertiary hover:border-border-active'
                 }`}
               >
                 <span className="text-text-primary font-medium truncate">
                   {typeDef?.label || 'Select type'}
                 </span>
-                <span className="ml-auto text-text-muted text-[10px]">▾</span>
+                <span className={`ml-auto text-text-muted text-[10px] transition-transform duration-200 ${openPickerIdx === idx ? 'rotate-180' : ''}`}>▾</span>
               </button>
 
               {/* Unique toggle */}
               <button
                 onClick={() => toggleUnique(field.id)}
                 title={field.unique ? 'Unique: ON' : 'Unique: OFF'}
-                className={`h-8 px-2 rounded-lg border text-[10px] font-medium transition-all duration-200 ${
+                className={`btn-press h-8 px-2 rounded-lg border text-[10px] font-medium transition-all duration-200 ${
                   field.unique
-                    ? 'border-accent/40 bg-accent/10 text-accent'
+                    ? 'border-accent/40 bg-accent/10 text-accent scale-105'
                     : 'border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary'
                 }`}
               >
@@ -231,15 +246,15 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
               <button
                 onClick={() => setEditModalIdx(idx)}
                 title="Edit field settings"
-                className={`h-8 w-10 flex items-center justify-center rounded-lg border text-sm transition-all duration-200 border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary hover:bg-bg-secondary`}
+                className="btn-press group h-8 w-10 flex items-center justify-center rounded-lg border text-sm transition-all duration-200 border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary hover:bg-bg-secondary"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:rotate-12"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
               </button>
 
               {/* Remove */}
               <button
                 onClick={() => removeField(field.id)}
-                className="h-8 w-10 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-all duration-200 text-base font-bold"
+                className="btn-press h-8 w-10 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/10 hover:rotate-90 transition-all duration-200 text-base font-bold"
                 aria-label="Remove field"
               >
                 ×
@@ -256,41 +271,31 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
       <div className="flex gap-3">
         <button
           onClick={addField}
-          className="flex-1 rounded-xl border border-dashed border-border-subtle py-3 text-xs font-medium text-text-muted hover:text-accent hover:border-accent/40 transition-all duration-200"
+          className="btn-press group flex-1 rounded-xl border border-dashed border-border-subtle py-3 text-xs font-medium text-text-muted transition-all duration-200 hover:text-accent hover:border-accent/40 hover:bg-accent/[0.03]"
         >
-          + Add Field
+          <span className="inline-block transition-transform duration-200 group-hover:rotate-90 mr-1">+</span>
+          Add Field
         </button>
         <button
           onClick={() => {
             setTemplateName('My Custom Template');
             setIsSaveModalOpen(true);
           }}
-          className="flex-1 rounded-xl border border-border-subtle py-3 text-xs font-medium text-text-muted hover:text-accent hover:border-accent/40 transition-all duration-200"
+          className="btn-press flex-1 rounded-xl border border-border-subtle py-3 text-xs font-medium text-text-muted transition-all duration-200 hover:text-accent hover:border-accent/40 hover:bg-accent/[0.03]"
         >
           Save as Template
         </button>
       </div>
 
       {/* Type Picker Modal */}
-      {openPickerIdx !== null && fields[openPickerIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-2xl bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-              <h3 className="text-lg font-semibold text-text-primary">
-                Select Type for <span className="text-accent font-mono ml-1">{fields[openPickerIdx].name || 'field'}</span>
-              </h3>
-              <button
-                onClick={() => { setOpenPickerIdx(null); setSearch(''); }}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-                aria-label="Close"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            
+      <Modal
+        isOpen={openPickerIdx !== null && !!fields[openPickerIdx ?? -1]}
+        onClose={() => { setOpenPickerIdx(null); setSearch(''); }}
+        maxWidth="max-w-2xl"
+        title={<>Select Type for <span className="text-accent font-mono ml-1">{openPickerIdx !== null ? (fields[openPickerIdx]?.name || 'field') : 'field'}</span></>}
+      >
+        {openPickerIdx !== null && fields[openPickerIdx] && (
+          <>
             <div className="p-4 border-b border-border-subtle bg-bg-tertiary/30">
               <input
                 type="text"
@@ -302,7 +307,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 pb-5">
+            <div className="px-5 pb-5">
               {filteredTypes ? (
                 // Filtered search results
                 <div className="space-y-1 pt-4">
@@ -345,89 +350,83 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Save Template Modal */}
-      {isSaveModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-              <h3 className="text-lg font-semibold text-text-primary">Save Template</h3>
-              <button
-                onClick={() => setIsSaveModalOpen(false)}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">Template Name</label>
-                <input
-                  type="text"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && templateName.trim()) {
-                      saveToHistory(fields, templateName.trim());
-                      window.dispatchEvent(new CustomEvent('template-saved'));
-                      setIsSaveModalOpen(false);
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setIsSaveModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (templateName.trim()) {
-                      saveToHistory(fields, templateName.trim());
-                      window.dispatchEvent(new CustomEvent('template-saved'));
-                      setIsSaveModalOpen(false);
-                    }
-                  }}
-                  disabled={!templateName.trim()}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        maxWidth="max-w-sm"
+        title="Save Template"
+        footer={
+          <div className="flex justify-end gap-3 p-4">
+            <button
+              onClick={() => setIsSaveModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (templateName.trim()) {
+                  saveToHistory(fields, templateName.trim());
+                  window.dispatchEvent(new CustomEvent('template-saved'));
+                  setIsSaveModalOpen(false);
+                  showToast(`Saved "${templateName.trim()}" template`);
+                }
+              }}
+              disabled={!templateName.trim()}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        }
+      >
+        <div className="p-5 space-y-4">
+          <div>
+            <label htmlFor="template-name-input" className="block text-sm font-medium text-text-primary mb-1.5">Template Name</label>
+            <input
+              id="template-name-input"
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && templateName.trim()) {
+                  saveToHistory(fields, templateName.trim());
+                  window.dispatchEvent(new CustomEvent('template-saved'));
+                  setIsSaveModalOpen(false);
+                  showToast(`Saved "${templateName.trim()}" template`);
+                }
+              }}
+            />
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Edit Options Modal */}
-      {editModalIdx !== null && fields[editModalIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-lg bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-bg-tertiary/30">
-              <h3 className="text-lg font-semibold text-text-primary">
-                Edit <span className="text-accent font-mono mx-1">{fields[editModalIdx].name || 'field'}</span> Options
-              </h3>
-              <button
-                onClick={() => setEditModalIdx(null)}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-5 overflow-y-auto space-y-5" style={{ scrollbarWidth: 'none' }}>
+      <Modal
+        isOpen={editModalIdx !== null && !!fields[editModalIdx ?? -1]}
+        onClose={() => setEditModalIdx(null)}
+        maxWidth="max-w-lg"
+        title={<>Edit <span className="text-accent font-mono mx-1">{editModalIdx !== null ? (fields[editModalIdx]?.name || 'field') : 'field'}</span> Options</>}
+        footer={
+          <div className="p-4 flex justify-end">
+            <button
+              onClick={() => setEditModalIdx(null)}
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20"
+            >
+              Done
+            </button>
+          </div>
+        }
+      >
+        {editModalIdx !== null && fields[editModalIdx] && (
+            <div className="p-5 space-y-5">
               {(() => {
                 const field = fields[editModalIdx];
                 const typeDef = findDataType(field.typeId);
@@ -454,6 +453,50 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                             className="w-full accent-accent h-1.5 cursor-pointer"
                           />
                           <p className="mt-1.5 text-[11px] text-text-muted">Probability of this field being empty (null).</p>
+                        </div>
+
+                        <div className={chaosGlobalRate === 0 ? 'opacity-50' : ''}>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium text-text-primary">Chaos overrides</label>
+                            <span className="text-[10px] font-mono text-text-muted">
+                              {chaosGlobalRate === 0 ? 'Chaos off' : `${chaosGlobalRate}% global rate`}
+                            </span>
+                          </div>
+                          <p className="mb-3 text-[11px] text-text-muted">
+                            Choose which corruption types this field is allowed to receive. Only active when the Chaos Engine rate is above 0%.
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {CHAOS_TYPE_LABELS.map(({ key, label }) => {
+                              const override = columnOverrides[field.id];
+                              const isOn = override ? override[key] : true;
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  disabled={chaosGlobalRate === 0}
+                                  onClick={() => setColumnOverride(field.id, { [key]: !isOn })}
+                                  className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs transition-all duration-200 disabled:cursor-not-allowed ${
+                                    isOn
+                                      ? 'border-warning/40 bg-warning/10 text-warning'
+                                      : 'border-border-subtle bg-bg-tertiary text-text-muted'
+                                  }`}
+                                >
+                                  <span>{label}</span>
+                                  <span
+                                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors shrink-0 ${
+                                      isOn ? 'bg-warning' : 'bg-border-subtle'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                        isOn ? 'translate-x-3.5' : 'translate-x-0.5'
+                                      }`}
+                                    />
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -522,17 +565,8 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 );
               })()}
             </div>
-            <div className="p-4 border-t border-border-subtle bg-bg-tertiary/30 flex justify-end">
-              <button
-                onClick={() => setEditModalIdx(null)}
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
