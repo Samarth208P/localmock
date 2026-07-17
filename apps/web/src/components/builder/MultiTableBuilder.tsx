@@ -1,9 +1,11 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useMultiTableStore } from '@/store/multiTableStore';
 import { FieldBuilder, type FieldRow } from '@/components/editor/FieldBuilder';
+import { showToast } from '@/components/shared/Toast';
 
 export function MultiTableBuilder() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [fkModalFieldId, setFkModalFieldId] = useState<string | null>(null);
   const [newTableName, setNewTableName] = useState('users');
   const {
     tables,
@@ -20,7 +22,7 @@ export function MultiTableBuilder() {
   } = useMultiTableStore();
 
   useEffect(() => {
-    if (isCreateModalOpen) {
+    if (isCreateModalOpen || fkModalFieldId) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -28,7 +30,7 @@ export function MultiTableBuilder() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isCreateModalOpen]);
+  }, [isCreateModalOpen, fkModalFieldId]);
 
   const activeTable = tables.find((t) => t.id === activeTableId);
 
@@ -39,28 +41,47 @@ export function MultiTableBuilder() {
     [activeTableId, setTableFields],
   );
 
-  const handleAddFK = useCallback(() => {
-    if (!activeTable || tables.length < 2) return;
-    const parentTable = tables.find((t) => t.id !== activeTableId);
-    if (!parentTable) return;
+  const handleFkToggle = useCallback((fieldId: string) => {
+    if (!activeTable) return;
+    
+    // Check if there is already an FK for this field
+    const field = activeTable.fields.find(f => f.id === fieldId);
+    if (!field) return;
 
+    const existingFk = foreignKeys.find(fk => fk.fromTable === activeTable.id && fk.fromField === field.name);
+    if (existingFk) {
+      // Remove it
+      removeForeignKey(existingFk.id);
+      
+      // Update field visually
+      const newFields = activeTable.fields.map(f => f.id === fieldId ? { ...f, hasForeignKey: false } : f);
+      setTableFields(activeTable.id, newFields);
+    } else {
+      // Open modal to create it
+      setFkModalFieldId(fieldId);
+    }
+  }, [activeTable, foreignKeys, removeForeignKey, setTableFields]);
+
+  const handleLinkFk = (parentTableId: string) => {
+    if (!activeTable || !fkModalFieldId) return;
+    const field = activeTable.fields.find(f => f.id === fkModalFieldId);
+    const parentTable = tables.find(t => t.id === parentTableId);
+    if (!field || !parentTable) return;
+
+    const parentPkField = parentTable.fields.find(f => f.isPrimaryKey) || parentTable.fields[0];
+    
     addForeignKey({
       fromTable: activeTable.id,
-      fromField: `${parentTable.name}_id`,
+      fromField: field.name,
       toTable: parentTable.id,
-      toField: 'id',
+      toField: parentPkField ? parentPkField.name : 'id'
     });
 
-    // Add FK field to current table
-    const fkField: FieldRow = {
-      id: Math.random().toString(36).slice(2, 10),
-      name: `${parentTable.name}_id`,
-      typeId: 'uuid',
-      options: {},
-      unique: false,
-    };
-    setTableFields(activeTable.id, [...activeTable.fields, fkField]);
-  }, [activeTable, activeTableId, tables, addForeignKey, setTableFields]);
+    const newFields = activeTable.fields.map(f => f.id === fkModalFieldId ? { ...f, hasForeignKey: true } : f);
+    setTableFields(activeTable.id, newFields);
+    setFkModalFieldId(null);
+    showToast(`Linked ${field.name} to ${parentTable.name}.${parentPkField ? parentPkField.name : 'id'}`, 'success');
+  };
 
   return (
     <div className="space-y-4">
@@ -124,53 +145,11 @@ export function MultiTableBuilder() {
             )}
           </div>
 
-          {/* FK section */}
-          <div className="rounded-lg border border-border-subtle bg-bg-secondary p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Foreign Keys</span>
-              <button
-                onClick={handleAddFK}
-                disabled={tables.length < 2}
-                className="text-[11px] text-accent hover:text-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                + Link FK
-              </button>
-            </div>
-
-            {foreignKeys
-              .filter((fk) => fk.fromTable === activeTable.id)
-              .map((fk) => {
-                const parentTable = tables.find((t) => t.id === fk.toTable);
-                return (
-                  <div
-                    key={fk.id}
-                    className="flex items-center gap-2 rounded-md bg-bg-tertiary px-2.5 py-1.5 text-[11px]"
-                  >
-                    <span className="text-text-muted">
-                      <span className="font-mono text-text-secondary">{fk.fromField}</span>
-                      {' → '}
-                      <span className="font-mono text-accent">{parentTable?.name || '?'}.{fk.toField}</span>
-                    </span>
-                    <button
-                      onClick={() => removeForeignKey(fk.id)}
-                      className="ml-auto text-text-muted hover:text-error transition-colors"
-                      aria-label="Remove FK"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                );
-              })}
-
-            {foreignKeys.filter((fk) => fk.fromTable === activeTable.id).length === 0 && (
-              <p className="text-[11px] text-text-muted">No foreign keys. Link this table to a parent.</p>
-            )}
-          </div>
-
           {/* Field builder for active table */}
           <FieldBuilder
-            key={activeTable.id}
+            key={activeTable.id} // Re-mounts on table change
             onFieldsChange={handleFieldsChange}
+            onFkToggle={handleFkToggle}
             initialFields={activeTable.fields}
           />
         </div>
@@ -243,6 +222,45 @@ export function MultiTableBuilder() {
                 >
                   Create
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Link FK Modal */}
+      {fkModalFieldId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div 
+            className="w-full max-w-sm bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-border-subtle">
+              <h3 className="text-lg font-semibold text-text-primary">Link to Parent Table</h3>
+              <button
+                onClick={() => setFkModalFieldId(null)}
+                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-text-secondary">Select the parent table to link this field to.</p>
+              
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {tables.filter(t => t.id !== activeTableId).map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleLinkFk(t.id)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border-subtle bg-bg-tertiary hover:border-accent/40 hover:bg-accent/[0.02] transition-colors"
+                  >
+                    <span className="text-sm font-medium text-text-primary">{t.name}</span>
+                    <span className="text-xs font-mono text-text-muted">id</span>
+                  </button>
+                ))}
+                
+                {tables.length <= 1 && (
+                  <p className="text-sm text-text-muted text-center py-4">No other tables available.</p>
+                )}
               </div>
             </div>
           </div>

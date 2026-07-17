@@ -21,6 +21,34 @@ export function ColumnList() {
     setParsedSchema(updated);
   };
 
+  const handleUpdateOption = (columnId: string, key: string, value: any) => {
+    const updated = {
+      ...parsedSchema,
+      tables: parsedSchema.tables.map((table) => ({
+        ...table,
+        columns: table.columns.map((col) =>
+          col.id === columnId
+            ? { ...col, options: { ...(col.options || {}), [key]: value } }
+            : col,
+        ),
+      })),
+    };
+    setParsedSchema(updated);
+  };
+
+  const handleUpdateNullPercentage = (columnId: string, percentage: number) => {
+    const updated = {
+      ...parsedSchema,
+      tables: parsedSchema.tables.map((table) => ({
+        ...table,
+        columns: table.columns.map((col) =>
+          col.id === columnId ? { ...col, nullPercentage: percentage } : col,
+        ),
+      })),
+    };
+    setParsedSchema(updated);
+  };
+
   const handleConfirm = (columnId: string) => {
     const updated = {
       ...parsedSchema,
@@ -76,7 +104,10 @@ export function ColumnList() {
             <ColumnRow
               key={column.id}
               column={column}
+              tableRelations={table.relations || []}
               onTypeChange={handleTypeChange}
+              onUpdateOption={handleUpdateOption}
+              onUpdateNullPercentage={handleUpdateNullPercentage}
               onConfirm={handleConfirm}
             />
           ))}

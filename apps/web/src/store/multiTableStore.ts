@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist } from 'zustand/middleware';
 import type { FieldRow } from '@/components/editor/FieldBuilder';
 
 export interface TableDef {
@@ -40,74 +41,86 @@ function genId() {
 }
 
 export const useMultiTableStore = create<MultiTableState>()(
-  immer((set) => ({
-    tables: [],
-    foreignKeys: [],
-    activeTableId: null,
+  persist(
+    immer((set) => ({
+      tables: [],
+      foreignKeys: [],
+      activeTableId: null,
 
-    addTable: (name) =>
-      set((state) => {
-        const id = genId();
-        state.tables.push({
-          id,
-          name: name || `table_${state.tables.length + 1}`,
-          fields: [
-            { id: genId(), name: 'id', typeId: 'uuid', options: {}, unique: true },
-          ],
-          rowCount: 1000,
-        });
-        state.activeTableId = id;
-      }),
+      addTable: (name) =>
+        set((state) => {
+          const id = genId();
+          state.tables.push({
+            id,
+            name: name || `table_${state.tables.length + 1}`,
+            fields: [
+              {
+                id: genId(),
+                name: 'id',
+                typeId: 'uuid',
+                options: {},
+                unique: true,
+                isPrimaryKey: true,
+              },
+            ],
+            rowCount: 1000,
+          });
+          state.activeTableId = id;
+        }),
 
-    removeTable: (id) =>
-      set((state) => {
-        state.tables = state.tables.filter((t) => t.id !== id);
-        state.foreignKeys = state.foreignKeys.filter(
-          (fk) => fk.fromTable !== id && fk.toTable !== id,
-        );
-        if (state.activeTableId === id) {
-          state.activeTableId = state.tables[0]?.id || null;
-        }
-      }),
+      removeTable: (id) =>
+        set((state) => {
+          state.tables = state.tables.filter((t) => t.id !== id);
+          state.foreignKeys = state.foreignKeys.filter(
+            (fk) => fk.fromTable !== id && fk.toTable !== id,
+          );
+          if (state.activeTableId === id) {
+            state.activeTableId = state.tables[0]?.id || null;
+          }
+        }),
 
-    renameTable: (id, name) =>
-      set((state) => {
-        const table = state.tables.find((t) => t.id === id);
-        if (table) table.name = name;
-      }),
+      renameTable: (id, name) =>
+        set((state) => {
+          const table = state.tables.find((t) => t.id === id);
+          if (table) table.name = name;
+        }),
 
-    setTableFields: (id, fields) =>
-      set((state) => {
-        const table = state.tables.find((t) => t.id === id);
-        if (table) table.fields = fields;
-      }),
+      setTableFields: (id, fields) =>
+        set((state) => {
+          const table = state.tables.find((t) => t.id === id);
+          if (table) table.fields = fields;
+        }),
 
-    setTableRowCount: (id, count) =>
-      set((state) => {
-        const table = state.tables.find((t) => t.id === id);
-        if (table) table.rowCount = Math.max(1, Math.min(1000000, count));
-      }),
+      setTableRowCount: (id, count) =>
+        set((state) => {
+          const table = state.tables.find((t) => t.id === id);
+          if (table) table.rowCount = Math.max(1, Math.min(1000000, count));
+        }),
 
-    setActiveTable: (id) =>
-      set((state) => {
-        state.activeTableId = id;
-      }),
+      setActiveTable: (id) =>
+        set((state) => {
+          state.activeTableId = id;
+        }),
 
-    addForeignKey: (fk) =>
-      set((state) => {
-        state.foreignKeys.push({ ...fk, id: genId() });
-      }),
+      addForeignKey: (fk) =>
+        set((state) => {
+          state.foreignKeys.push({ ...fk, id: genId() });
+        }),
 
-    removeForeignKey: (id) =>
-      set((state) => {
-        state.foreignKeys = state.foreignKeys.filter((fk) => fk.id !== id);
-      }),
+      removeForeignKey: (id) =>
+        set((state) => {
+          state.foreignKeys = state.foreignKeys.filter((fk) => fk.id !== id);
+        }),
 
-    reset: () =>
-      set((state) => {
-        state.tables = [];
-        state.foreignKeys = [];
-        state.activeTableId = null;
-      }),
-  })),
+      reset: () =>
+        set((state) => {
+          state.tables = [];
+          state.foreignKeys = [];
+          state.activeTableId = null;
+        }),
+    })),
+    {
+      name: 'multi-table-storage',
+    }
+  )
 );

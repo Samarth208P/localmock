@@ -35,26 +35,23 @@ export function TableNode({ data }: { data: TableNodeData }) {
       console.error("Error generating sample data for node", e);
       return [];
     }
-  }, [data.fields]);
+  }, [JSON.stringify(data.fields)]);
 
   const nodeRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     if (!nodeRef.current) return;
     gsap.from(nodeRef.current, {
-      scale: 0.8,
+      scale: 0.95,
       opacity: 0,
-      y: 20,
-      duration: 0.6,
-      ease: 'back.out(1.7)',
+      y: 10,
+      duration: 0.35,
+      ease: 'power3.out',
     });
   }, []);
 
   return (
-    <div ref={nodeRef} className="bg-bg-primary border border-border-subtle rounded-xl shadow-xl overflow-hidden min-w-[320px] max-w-[400px] font-sans text-sm transition-all duration-300 hover:shadow-accent/10 hover:border-accent/50 hover:scale-[1.02] cursor-grab active:cursor-grabbing group/node">
-      {/* Top Handle for incoming connections */}
-      <Handle type="target" position={Position.Top} className="!bg-border-subtle !w-2 !h-2 !border-bg-primary opacity-0 group-hover/node:opacity-100 transition-opacity" />
-      
+    <div ref={nodeRef} className="bg-bg-primary border border-border-subtle rounded-xl shadow-xl overflow-hidden min-w-[320px] w-max font-sans text-sm transition-all duration-300 hover:shadow-accent/10 hover:border-accent/50 hover:scale-[1.02] cursor-grab active:cursor-grabbing group/node">
       {/* Header */}
       <div className="bg-bg-secondary/80 backdrop-blur-sm px-4 py-3 border-b border-border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -129,7 +126,7 @@ export function TableNode({ data }: { data: TableNodeData }) {
           </svg>
           Sample Data
         </p>
-        <div className="overflow-x-auto custom-scrollbar pb-1">
+        <div className="pb-1">
           <table className="w-full text-left text-xs whitespace-nowrap">
             <thead>
               <tr>
@@ -145,7 +142,7 @@ export function TableNode({ data }: { data: TableNodeData }) {
                     const val = row[f.name];
                     const displayVal = val === null ? 'null' : val === undefined ? 'undefined' : String(val);
                     return (
-                      <td key={f.name} className="py-1.5 pr-4 text-text-primary/90 font-mono text-[11px] truncate max-w-[120px]" title={displayVal}>
+                      <td key={f.name} className="py-1.5 pr-4 text-text-primary/90 font-mono text-[11px] truncate max-w-[150px]" title={displayVal}>
                         {displayVal}
                       </td>
                     );
@@ -156,9 +153,6 @@ export function TableNode({ data }: { data: TableNodeData }) {
           </table>
         </div>
       </div>
-
-      {/* Bottom Handle for outgoing connections */}
-      <Handle type="source" position={Position.Bottom} className="!bg-border-subtle !w-2 !h-2 !border-bg-primary opacity-0 group-hover/node:opacity-100 transition-opacity" />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DATA_TYPE_CATEGORIES, ALL_DATA_TYPES, findDataType, type DataTypeOption } from '@/lib/dataTypes';
+import { findDataType, type DataTypeOption } from '@/lib/dataTypes';
 import { useSchemaStore } from '@/store/schemaStore';
-import { CATEGORY_ICONS } from '@/components/shared/Icons';
-import { Select } from '@/components/shared/Select';
+import { TypePickerModal } from '@/components/shared/TypePickerModal';
+import { SettingsModal } from '@/components/shared/SettingsModal';
+import { showToast } from '@/components/shared/Toast';
 import {
   DndContext,
   closestCenter,
@@ -27,22 +28,24 @@ export interface FieldRow {
   typeId: string;
   options: Record<string, unknown>;
   unique: boolean;
+  isPrimaryKey?: boolean;
+  hasForeignKey?: boolean;
   nullPercentage?: number;
 }
 
 interface FieldBuilderProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
+  onFkToggle?: (fieldId: string) => void;
   initialFields?: FieldRow[];
 }
 
-export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProps) {
+export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields }: FieldBuilderProps) {
   const { setParsedSchema } = useSchemaStore();
   const [fields, setFields] = useState<FieldRow[]>(initialFields && initialFields.length > 0 ? initialFields : [
     { id: crypto.randomUUID(), name: 'id', typeId: 'uuid', options: {}, unique: true },
     { id: crypto.randomUUID(), name: 'name', typeId: 'fullName', options: {}, unique: false },
     { id: crypto.randomUUID(), name: 'email', typeId: 'email', options: {}, unique: true },
   ]);
-  const [search, setSearch] = useState('');
   const [openPickerIdx, setOpenPickerIdx] = useState<number | null>(null);
   const [editModalIdx, setEditModalIdx] = useState<number | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -87,6 +90,7 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
             fakerMethod: f.typeId,
             confidence: 'high' as const,
             isUnique: f.unique,
+            isPrimaryKey: f.isPrimaryKey,
             isSequential: f.typeId === 'autoIncrement',
             nullPercentage: f.nullPercentage || 0,
           })),
@@ -147,7 +151,6 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
     }
     updateAndCommit(fields.map((f) => (f.id === id ? { ...f, typeId: type.id, options: defaults } : f)));
     setOpenPickerIdx(null);
-    setSearch('');
   };
 
   const updateFieldOption = (id: string, key: string, value: unknown) => {
@@ -157,16 +160,48 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
   };
 
   const toggleUnique = (id: string) => {
-    updateAndCommit(fields.map((f) => (f.id === id ? { ...f, unique: !f.unique } : f)));
+    updateAndCommit(fields.map((f) => {
+      if (f.id === id) {
+        const newUnique = !f.unique;
+        // If turning OFF unique, it can no longer be a Primary Key
+        if (!newUnique && f.isPrimaryKey) {
+          showToast('Primary Keys must be unique. Primary Key removed.', 'error');
+          return { ...f, unique: newUnique, isPrimaryKey: false };
+        }
+        return { ...f, unique: newUnique };
+      }
+      return f;
+    }));
   };
 
-  // Filter types by search
-  const filteredTypes = search.trim()
-    ? ALL_DATA_TYPES.filter((t) =>
-        t.label.toLowerCase().includes(search.toLowerCase()) ||
-        t.category.toLowerCase().includes(search.toLowerCase()),
-      )
-    : null;
+  const togglePrimaryKey = (id: string) => {
+    let oldPkRemoved = false;
+    let newPkAdded = false;
+
+    const newFields = fields.map((f) => {
+      if (f.id === id) {
+        const newPk = !f.isPrimaryKey;
+        if (newPk) newPkAdded = true;
+        // If turning ON PK, it MUST be unique
+        return { ...f, isPrimaryKey: newPk, unique: newPk ? true : f.unique };
+      }
+      // Only one PK allowed per table!
+      if (newPkAdded && f.isPrimaryKey) {
+        oldPkRemoved = true;
+      }
+      return { ...f, isPrimaryKey: false };
+    });
+
+    if (oldPkRemoved) {
+      showToast('Only one Primary Key allowed per table. Previous PK removed.', 'success');
+    } else if (newPkAdded) {
+      showToast('Primary Key set (Unique constraint automatically applied).', 'success');
+    }
+
+    updateAndCommit(newFields);
+  };
+
+
 
   return (
     <div className="space-y-3">
@@ -214,18 +249,48 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
                 <span className="ml-auto text-text-muted text-[10px]">▾</span>
               </button>
 
-              {/* Unique toggle */}
-              <button
-                onClick={() => toggleUnique(field.id)}
-                title={field.unique ? 'Unique: ON' : 'Unique: OFF'}
-                className={`h-8 px-2 rounded-lg border text-[10px] font-medium transition-all duration-200 ${
-                  field.unique
-                    ? 'border-accent/40 bg-accent/10 text-accent'
-                    : 'border-border-subtle bg-bg-tertiary text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                U
-              </button>
+              {/* Keys/Constraints Toggle Group */}
+              <div className="flex items-center gap-1 bg-bg-secondary rounded-lg border border-border-subtle p-0.5">
+                <button
+                  onClick={() => togglePrimaryKey(field.id)}
+                  title={field.isPrimaryKey ? 'Primary Key: ON' : 'Primary Key: OFF'}
+                  className={`h-7 px-2 rounded-md text-[10px] font-bold transition-all duration-200 ${
+                    field.isPrimaryKey
+                      ? 'bg-amber-500/20 text-amber-500 shadow-sm shadow-amber-500/10'
+                      : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+                  }`}
+                >
+                  PK
+                </button>
+                <div className="w-px h-4 bg-border-subtle/50" />
+                <button
+                  onClick={() => toggleUnique(field.id)}
+                  title={field.unique ? 'Unique: ON' : 'Unique: OFF'}
+                  className={`h-7 px-2 rounded-md text-[10px] font-bold transition-all duration-200 ${
+                    field.unique
+                      ? 'bg-accent/20 text-accent shadow-sm shadow-accent/10'
+                      : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+                  }`}
+                >
+                  UQ
+                </button>
+                {onFkToggle && (
+                  <>
+                    <div className="w-px h-4 bg-border-subtle/50" />
+                    <button
+                      onClick={() => onFkToggle(field.id)}
+                      title={field.hasForeignKey ? 'Foreign Key: Linked' : 'Foreign Key: Unlinked'}
+                      className={`h-7 px-2 rounded-md text-[10px] font-bold transition-all duration-200 ${
+                        field.hasForeignKey
+                          ? 'bg-emerald-500/20 text-emerald-500 shadow-sm shadow-emerald-500/10'
+                          : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+                      }`}
+                    >
+                      FK
+                    </button>
+                  </>
+                )}
+              </div>
 
               {/* Settings toggle (always show since we have general settings) */}
               <button
@@ -273,80 +338,11 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
 
       {/* Type Picker Modal */}
       {openPickerIdx !== null && fields[openPickerIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-2xl bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-              <h3 className="text-lg font-semibold text-text-primary">
-                Select Type for <span className="text-accent font-mono ml-1">{fields[openPickerIdx].name || 'field'}</span>
-              </h3>
-              <button
-                onClick={() => { setOpenPickerIdx(null); setSearch(''); }}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-                aria-label="Close"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            
-            <div className="p-4 border-b border-border-subtle bg-bg-tertiary/30">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search 80+ types..."
-                className="w-full rounded-xl border border-border-subtle bg-bg-secondary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-200"
-                autoFocus
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 pb-5">
-              {filteredTypes ? (
-                // Filtered search results
-                <div className="space-y-1 pt-4">
-                  {filteredTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => updateFieldType(fields[openPickerIdx].id, type)}
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left hover:bg-bg-tertiary transition-colors group"
-                    >
-                      <span className="text-sm text-text-primary font-medium group-hover:text-accent transition-colors">{type.label}</span>
-                      <span className="ml-auto text-xs text-text-muted">{type.category}</span>
-                    </button>
-                  ))}
-                  {filteredTypes.length === 0 && (
-                    <p className="text-sm text-text-muted text-center py-8">No types match "{search}"</p>
-                  )}
-                </div>
-              ) : (
-                // Category grid
-                <div className="space-y-8">
-                {DATA_TYPE_CATEGORIES.map((cat) => (
-                  <div key={cat.id}>
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2 sticky top-0 bg-bg-secondary pt-5 pb-2 z-10 border-b border-border-subtle/50">
-                      {CATEGORY_ICONS[cat.id] && (() => { const Icon = CATEGORY_ICONS[cat.id]; return <Icon size={14} className="opacity-60" />; })()}
-                      <span>{cat.label}</span>
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      {cat.types.map((type) => (
-                        <button
-                          key={type.id}
-                          onClick={() => updateFieldType(fields[openPickerIdx].id, type)}
-                          className="rounded-xl px-4 py-3 text-left text-sm text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all border border-transparent hover:border-border-subtle hover:shadow-sm"
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <TypePickerModal
+          fieldName={fields[openPickerIdx].name}
+          onSelect={(type) => updateFieldType(fields[openPickerIdx].id, type)}
+          onClose={() => { setOpenPickerIdx(null); }}
+        />
       )}
 
       {/* Save Template Modal */}
@@ -411,127 +407,17 @@ export function FieldBuilder({ onFieldsChange, initialFields }: FieldBuilderProp
 
       {/* Edit Options Modal */}
       {editModalIdx !== null && fields[editModalIdx] && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-bg-primary/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="w-full max-w-lg bg-bg-secondary border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-bg-tertiary/30">
-              <h3 className="text-lg font-semibold text-text-primary">
-                Edit <span className="text-accent font-mono mx-1">{fields[editModalIdx].name || 'field'}</span> Options
-              </h3>
-              <button
-                onClick={() => setEditModalIdx(null)}
-                className="rounded-lg p-2 text-text-muted hover:bg-bg-tertiary hover:text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-5 overflow-y-auto space-y-5" style={{ scrollbarWidth: 'none' }}>
-              {(() => {
-                const field = fields[editModalIdx];
-                const typeDef = findDataType(field.typeId);
-
-                return (
-                  <div className="space-y-6 pb-2">
-                    {/* General Settings */}
-                    <div>
-                      <h4 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-4">General Settings</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-medium text-text-primary">Null Percentage</label>
-                            <span className="text-xs font-mono text-text-muted">{field.nullPercentage || 0}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={field.nullPercentage || 0}
-                            onChange={(e) => {
-                              updateAndCommit(fields.map(f => f.id === field.id ? { ...f, nullPercentage: parseInt(e.target.value) } : f));
-                            }}
-                            className="w-full accent-accent h-1.5 cursor-pointer"
-                          />
-                          <p className="mt-1.5 text-[11px] text-text-muted">Probability of this field being empty (null).</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Type Specific Options */}
-                    {typeDef && typeDef.options.length > 0 && (
-                      <div className="pt-6 border-t border-border-subtle/50">
-                        <h4 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-4">Type Options</h4>
-                        <div className="space-y-3">
-                          {typeDef.options.map((opt) => (
-                            <div key={opt.key} className={opt.type === 'boolean' ? "flex items-center justify-between py-1" : "flex flex-col gap-2"}>
-                              <label className="text-sm font-medium text-text-primary">{opt.label}</label>
-
-                              {opt.type === 'select' && (
-                                <Select
-                                  value={String(field.options[opt.key] ?? opt.default)}
-                                  onChange={(val) => updateFieldOption(field.id, opt.key, val)}
-                                  options={opt.choices?.map(c => ({ value: c, label: c })) || []}
-                                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary focus:border-accent focus:outline-none transition-all duration-200"
-                                />
-                              )}
-
-                              {opt.type === 'number' && (
-                                <input
-                                  type="number"
-                                  value={Number(field.options[opt.key] ?? opt.default)}
-                                  onChange={(e) => updateFieldOption(field.id, opt.key, parseInt(e.target.value) || 0)}
-                                  min={opt.min}
-                                  max={opt.max}
-                                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm font-mono text-text-primary focus:border-accent focus:outline-none transition-all duration-200"
-                                />
-                              )}
-
-                              {opt.type === 'text' && (
-                                <input
-                                  type="text"
-                                  value={String(field.options[opt.key] ?? opt.default)}
-                                  onChange={(e) => updateFieldOption(field.id, opt.key, e.target.value)}
-                                  placeholder={opt.placeholder}
-                                  className="w-full rounded-xl border border-border-subtle bg-bg-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/40 focus:border-accent focus:outline-none transition-all duration-200"
-                                />
-                              )}
-
-                              {opt.type === 'boolean' && (
-                                <div>
-                                  <button
-                                    onClick={() => updateFieldOption(field.id, opt.key, !(field.options[opt.key] ?? opt.default))}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                      (field.options[opt.key] ?? opt.default) ? 'bg-accent' : 'bg-bg-tertiary border border-border-subtle'
-                                    }`}
-                                  >
-                                    <span
-                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                        (field.options[opt.key] ?? opt.default) ? 'translate-x-6' : 'translate-x-1'
-                                      }`}
-                                    />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="p-4 border-t border-border-subtle bg-bg-tertiary/30 flex justify-end">
-              <button
-                onClick={() => setEditModalIdx(null)}
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+        <SettingsModal
+          fieldName={fields[editModalIdx].name}
+          typeId={fields[editModalIdx].typeId}
+          options={fields[editModalIdx].options}
+          nullPercentage={fields[editModalIdx].nullPercentage || 0}
+          onUpdateOption={(key, value) => updateFieldOption(fields[editModalIdx].id, key, value)}
+          onUpdateNullPercentage={(percentage) => {
+            updateAndCommit(fields.map(f => f.id === fields[editModalIdx].id ? { ...f, nullPercentage: percentage } : f));
+          }}
+          onClose={() => setEditModalIdx(null)}
+        />
       )}
     </div>
   );

@@ -14,15 +14,6 @@ export function Footer() {
         {' — '}Client-side data generation. No data leaves your browser.
       </span>
       <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-        <a href="/tools/csv-test-data-generator" className="hover:text-text-secondary transition-colors">
-          CSV
-        </a>
-        <a href="/templates/users" className="hover:text-text-secondary transition-colors">
-          Templates
-        </a>
-        <a href="/mockaroo-alternative" className="hover:text-text-secondary transition-colors">
-          Mockaroo alt
-        </a>
         <a
           href={requestHref}
           className="inline-flex items-center rounded-md border border-accent/40 bg-accent-subtle px-3 py-1.5 font-medium text-text-secondary transition-colors hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

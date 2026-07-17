@@ -159,7 +159,12 @@ function parsePrismaBody(tableName: string, body: string) {
     };
 
     const typeHint = typeMap[prismaType] || 'string';
-    fields.push(classifyField(fieldName, typeHint));
+    const field = classifyField(fieldName, typeHint);
+    
+    if (decorators.includes('@unique')) field.isUnique = true;
+    if (decorators.includes('@id')) field.isPrimaryKey = true;
+
+    fields.push(field);
   }
 
   return { fields, relations };
@@ -416,6 +421,9 @@ function parseSQLBody(tableName: string, body: string) {
 
       const upper = sqlType.toUpperCase();
 
+      const isPk = /PRIMARY\s+KEY/i.test(line);
+      const isUnique = /UNIQUE/i.test(line);
+
       let typeHint = 'string';
       if (['INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'SERIAL'].includes(upper)) typeHint = 'number';
       else if (['FLOAT', 'DOUBLE', 'DECIMAL', 'NUMERIC', 'REAL'].includes(upper)) typeHint = 'number';
@@ -423,7 +431,11 @@ function parseSQLBody(tableName: string, body: string) {
       else if (['DATE', 'DATETIME', 'TIMESTAMP', 'TIMESTAMPTZ'].includes(upper)) typeHint = 'date';
       else if (['UUID'].includes(upper)) typeHint = 'string';
 
-      fields.push(classifyField(name, typeHint));
+      const field = classifyField(name, typeHint);
+      if (isPk) field.isPrimaryKey = true;
+      if (isUnique) field.isUnique = true;
+
+      fields.push(field);
   }
 
   return { fields, relations };

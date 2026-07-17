@@ -57,11 +57,13 @@ const RULES: HeuristicRule[] = [
   { pattern: /^(lat|latitude)$/i, fakerMethod: 'location.latitude', inferredType: 'latitude', confidence: 'high' },
   { pattern: /^(lng|lon|longitude)$/i, fakerMethod: 'location.longitude', inferredType: 'longitude', confidence: 'high' },
 
-  // Company
+  // Company & Jobs
   { pattern: /^(company|companyName|organization|org)$/i, fakerMethod: 'company.name', inferredType: 'company', confidence: 'high' },
+  { pattern: /^(jobTitle|profession|occupation)$/i, fakerMethod: 'person.jobTitle', inferredType: 'jobTitle', confidence: 'high' },
+  { pattern: /^(department|team|division)$/i, fakerMethod: 'commerce.department', inferredType: 'department', confidence: 'medium' },
 
   // Description / Text
-  { pattern: /^(description|bio|about|summary|content|body|text|note)$/i, fakerMethod: 'lorem.paragraph', inferredType: 'text', confidence: 'high' },
+  { pattern: /^(description|bio|about|summary|content|body|text|note|feedback|review|comment|message)$/i, fakerMethod: 'lorem.paragraph', inferredType: 'text', confidence: 'high' },
   { pattern: /^(title|subject|headline)$/i, fakerMethod: 'lorem.sentence', inferredType: 'sentence', confidence: 'medium' },
 
   // Status / Enum (generic fallback)

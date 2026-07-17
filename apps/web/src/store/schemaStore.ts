@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist } from 'zustand/middleware';
 
 export interface ParsedColumn {
   id: string;
@@ -9,6 +10,9 @@ export interface ParsedColumn {
   confidence: 'high' | 'medium' | 'low';
   isUnique: boolean;
   isSequential: boolean;
+  isPrimaryKey?: boolean;
+  options?: Record<string, any>;
+  nullPercentage?: number;
 }
 
 export interface ParsedSchema {
@@ -41,32 +45,37 @@ interface SchemaState {
 }
 
 export const useSchemaStore = create<SchemaState>()(
-  immer((set) => ({
-    rawInput: '',
-    parsedSchema: null,
-    parseError: null,
+  persist(
+    immer((set) => ({
+      rawInput: '',
+      parsedSchema: null,
+      parseError: null,
 
-    setRawInput: (input) =>
-      set((state) => {
-        state.rawInput = input;
-      }),
+      setRawInput: (input) =>
+        set((state) => {
+          state.rawInput = input;
+        }),
 
-    setParsedSchema: (schema) =>
-      set((state) => {
-        state.parsedSchema = schema;
-        state.parseError = null;
-      }),
+      setParsedSchema: (schema) =>
+        set((state) => {
+          state.parsedSchema = schema;
+          state.parseError = null;
+        }),
 
-    setParseError: (error) =>
-      set((state) => {
-        state.parseError = error;
-      }),
+      setParseError: (error) =>
+        set((state) => {
+          state.parseError = error;
+        }),
 
-    reset: () =>
-      set((state) => {
-        state.rawInput = '';
-        state.parsedSchema = null;
-        state.parseError = null;
-      }),
-  })),
+      reset: () =>
+        set((state) => {
+          state.rawInput = '';
+          state.parsedSchema = null;
+          state.parseError = null;
+        }),
+    })),
+    {
+      name: 'schema-storage',
+    }
+  )
 );

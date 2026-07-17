@@ -8,6 +8,8 @@ export interface FieldClassification {
   fakerMethod: string;
   confidence: ConfidenceLevel;
   originalType?: string;
+  isUnique?: boolean;
+  isPrimaryKey?: boolean;
 }
 
 export interface RelationEdge {

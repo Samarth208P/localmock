@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type AppStep = 'input' | 'configure' | 'preview';
 
@@ -10,16 +11,23 @@ interface AppState {
 
 const STEP_ORDER: AppStep[] = ['input', 'configure', 'preview'];
 
-export const useAppStore = create<AppState>((set, get) => ({
-  step: 'input',
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      step: 'input',
 
-  setStep: (step) => set({ step }),
+      setStep: (step) => set({ step }),
 
-  goBack: () => {
-    const current = get().step;
-    const idx = STEP_ORDER.indexOf(current);
-    if (idx > 0) {
-      set({ step: STEP_ORDER[idx - 1] });
+      goBack: () => {
+        const current = get().step;
+        const idx = STEP_ORDER.indexOf(current);
+        if (idx > 0) {
+          set({ step: STEP_ORDER[idx - 1] });
+        }
+      },
+    }),
+    {
+      name: 'app-storage',
     }
-  },
-}));
+  )
+);

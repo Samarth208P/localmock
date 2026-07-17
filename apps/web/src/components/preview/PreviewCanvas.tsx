@@ -20,7 +20,7 @@ const nodeTypes = {
   table: TableNode,
 };
 
-export function PreviewCanvas() {
+export function PreviewCanvas({ fieldDefs, tableName = 'data' }: { fieldDefs?: any[], tableName?: string }) {
   const { tables, foreignKeys } = useMultiTableStore();
   const { parsedSchema } = useSchemaStore();
 
@@ -31,9 +31,10 @@ export function PreviewCanvas() {
     if (tables.length > 0) {
       // Multi-table mode
       nodes = tables.map((t, index) => {
-        // Simple layout: arrange in a grid or row
-        const x = (index % 3) * 450 + 50;
-        const y = Math.floor(index / 3) * 400 + 50;
+        // Reverse layout horizontally so dependents (sources) are on the left
+        const reverseIndex = tables.length - 1 - index;
+        const x = (reverseIndex % 3) * 800 + 50;
+        const y = Math.floor(reverseIndex / 3) * 600 + 50;
 
         return {
           id: t.id,
@@ -60,7 +61,7 @@ export function PreviewCanvas() {
         sourceHandle: fk.fromField,
         targetHandle: fk.toField,
         animated: true,
-        type: 'smoothstep',
+        type: 'default',
         style: { stroke: '#6366f1', strokeWidth: 2.5 },
       }));
 
@@ -86,8 +87,9 @@ export function PreviewCanvas() {
       }
 
       nodes = parsedSchema.tables.map((t, index) => {
-        const x = (index % 3) * 450 + 50;
-        const y = Math.floor(index / 3) * 400 + 50;
+        const reverseIndex = parsedSchema.tables.length - 1 - index;
+        const x = (reverseIndex % 3) * 800 + 50;
+        const y = Math.floor(reverseIndex / 3) * 600 + 50;
 
         return {
           id: t.name,
@@ -117,19 +119,41 @@ export function PreviewCanvas() {
               sourceHandle: r.fromField,
               targetHandle: r.toField,
               animated: true,
-              type: 'smoothstep',
+              type: 'default',
               style: { stroke: '#6366f1', strokeWidth: 2.5 },
             });
           });
         }
       });
+    } else if (fieldDefs && fieldDefs.length > 0) {
+      nodes = [{
+        id: 'manual-table',
+        type: 'table',
+        position: { x: 50, y: 50 },
+        data: {
+          name: tableName,
+          fields: fieldDefs.map(f => ({
+            name: f.name,
+            typeId: f.typeId,
+            options: f.options,
+            unique: f.unique,
+            isPrimaryKey: f.name === 'id',
+            isForeignKey: false,
+          }))
+        }
+      }];
     }
 
     return { nodes, edges };
-  }, [tables, foreignKeys, parsedSchema]);
+  }, [tables, foreignKeys, parsedSchema, fieldDefs, tableName]);
 
-  const [nodes, , onNodesChange] = useNodesState(initialElements.nodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialElements.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialElements.edges);
+
+  useEffect(() => {
+    setNodes(initialElements.nodes);
+    setEdges(initialElements.edges);
+  }, [initialElements, setNodes, setEdges]);
 
   // Allow manual connecting just for fun, though it won't persist to the store here
   const onConnect = useCallback((params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, animated: true, type: 'default' }, eds)), [setEdges]);
@@ -138,7 +162,7 @@ export function PreviewCanvas() {
 
   useEffect(() => {
     if (rfInstance && nodes.length > 0) {
-      setTimeout(() => rfInstance.fitView({ padding: 0.2, duration: 800 }), 50);
+      setTimeout(() => rfInstance.fitView({ padding: 0.2, duration: 800, minZoom: 0.01 }), 50);
     }
   }, [rfInstance, parsedSchema, tables.length]);
 
@@ -153,9 +177,9 @@ export function PreviewCanvas() {
         onInit={setRfInstance}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.2, minZoom: 0.01 }}
         className="react-flow-dark"
-        minZoom={0.1}
+        minZoom={0.01}
         maxZoom={1.5}
         proOptions={{ hideAttribution: true }}
       >
@@ -163,6 +187,7 @@ export function PreviewCanvas() {
         <Controls 
           className="bg-bg-tertiary border border-border-subtle shadow-xl rounded-xl overflow-hidden flex flex-col p-1 gap-1" 
           showInteractive={false}
+          fitViewOptions={{ padding: 0.2, minZoom: 0.01 }}
         />
         <MiniMap 
           nodeColor="#27272a" 

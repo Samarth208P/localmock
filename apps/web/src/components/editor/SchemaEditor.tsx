@@ -11,14 +11,14 @@ type InputMode = 'paste' | 'build' | 'multi-table' | 'template';
 interface SchemaEditorProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
   initialFields?: FieldRow[];
-  onGenerate?: () => void;
+  onGenerate?: (mode: InputMode) => void;
   hasSchema?: boolean;
 }
 
 export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSchema }: SchemaEditorProps) {
   const { rawInput, setRawInput, setParsedSchema, setParseError, parsedSchema } = useSchemaStore();
   const [mode, setMode] = useState<InputMode>(
-    initialFields && initialFields.length > 0 ? 'build' : rawInput || parsedSchema ? 'paste' : 'build'
+    rawInput || parsedSchema ? 'paste' : initialFields && initialFields.length > 0 ? 'build' : 'build'
   );
   const [isFocused, setIsFocused] = useState(false);
   const [restoredFields, setRestoredFields] = useState<FieldRow[] | undefined>(initialFields);
@@ -53,7 +53,8 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
               type: f.inferredType,
               fakerMethod: f.fakerMethod,
               confidence: f.confidence,
-              isUnique: false,
+              isUnique: f.isUnique || false,
+              isPrimaryKey: f.isPrimaryKey || false,
               isSequential: false,
             })),
             relations: t.relations || [],
@@ -250,7 +251,7 @@ export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSch
           {hasSchema && onGenerate && (
             <div className="mt-12">
               <button
-                onClick={onGenerate}
+                onClick={() => onGenerate(mode)}
                 className="group animate-in fade-in slide-in-from-bottom-2 w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <span className="whitespace-nowrap">Configure</span>

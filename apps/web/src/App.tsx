@@ -91,6 +91,7 @@ function App() {
   const lastFieldDefsRef = useRef<FieldDef[]>([]);
   const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
   const [hasManualFields, setHasManualFields] = useState(false);
+  const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>('build');
 
   // Hydrate schema from URL on initial load
   useEffect(() => {
@@ -118,10 +119,9 @@ function App() {
   }, []);
 
   const handleGenerate = useCallback(() => {
-    // Try manual builder fields first
     let fieldDefs: FieldDef[] = [];
 
-    if (fieldsRef.current.length > 0 && fieldsRef.current.some((f) => f.name.trim())) {
+    if (activeGeneratorSource === 'build' || activeGeneratorSource === 'template') {
       fieldDefs = fieldsRef.current
         .filter((f) => f.name.trim())
         .map((f) => ({
@@ -130,8 +130,7 @@ function App() {
           options: f.options,
           unique: f.unique,
         }));
-    } else if (multiTable.tables.length > 0) {
-      // Multi-table mode: use active table or first table with fields
+    } else if (activeGeneratorSource === 'multi-table') {
       const table = multiTable.tables.find((t) => t.id === multiTable.activeTableId)
         || multiTable.tables[0];
       if (table && table.fields.length > 0) {
@@ -144,7 +143,7 @@ function App() {
             unique: f.unique,
           }));
       }
-    } else if (parsedSchema && parsedSchema.tables.length > 0) {
+    } else if (activeGeneratorSource === 'paste' && parsedSchema && parsedSchema.tables.length > 0) {
       // Check if we have multiple tables with relations → use multi-table generation
       const hasRelations = parsedSchema.tables.some(t => t.relations && t.relations.length > 0);
 
@@ -221,8 +220,11 @@ function App() {
     setStep('preview');
   }, [parsedSchema, generate, generateMultiTable, setStep, rowCount]);
 
-  const handleProceedToConfigure = useCallback(() => {
-    if (hasSchema) setStep('configure');
+  const handleProceedToConfigure = useCallback((mode: 'build' | 'paste' | 'multi-table' | 'template') => {
+    if (hasSchema) {
+      setActiveGeneratorSource(mode);
+      setStep('configure');
+    }
   }, [hasSchema, setStep]);
 
   if (landingPage) {

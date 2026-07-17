@@ -425,6 +425,7 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     }
     case 'gender': return ctx.gender === 'male' ? 'Male' : 'Female';
     case 'jobTitle': return rng.pick(P.JOB_TITLES);
+    case 'department': return rng.pick(['Engineering', 'Product', 'Design', 'Marketing', 'Sales', 'Human Resources', 'Finance', 'Legal', 'Operations', 'Customer Support', 'IT', 'Research & Development']);
     case 'bio': return genBio(ctx, (opts.length as string) || 'medium');
     case 'password': return genPassword(rng, Number(opts.length) || 12, opts.symbols !== false, opts.numbers !== false, opts.hashing as string);
     case 'age': return ctx.age;
@@ -613,7 +614,7 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
       if (opts.sentiment === 'negative') text = `Terrible experience. ${text} Would not buy again.`;
       return applyCasing(text, opts.casing as string);
     }
-    case 'paragraph': {
+    case 'paragraph': case 'text': {
       let text = Intel.smartParagraph(rng, Number(opts.minSentences) || 3, Number(opts.maxSentences) || 6);
       if (opts.sentiment === 'positive') text = `Outstanding quality and perfect design. ${text} Exceeded all my expectations entirely.`;
       if (opts.sentiment === 'negative') text = `Very disappointing and poorly made. ${text} The support was unhelpful and it broke quickly.`;
@@ -717,6 +718,8 @@ export function generateTypedValue(typeId: string, opts: Options, ctx: RowContex
     }
     case 'drugName': return opts.brandName ? rng.pick(Health.DRUGS_BRAND) : rng.pick(Health.DRUGS_GENERIC);
 
-    default: return `${ctx.firstName.toLowerCase()}_${randInt(rng, 1, 9999)}`;
+    case 'string': return randString(rng, Number(opts.length) || 10, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789');
+
+    default: return randString(rng, 10, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789');
   }
 }
