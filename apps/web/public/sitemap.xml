@@ -1,63 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Home -->
   <url>
     <loc>https://localmock.dev/</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- Tool pages -->
   <url>
     <loc>https://localmock.dev/tools/csv-test-data-generator</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://localmock.dev/tools/json-mock-data-generator</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://localmock.dev/tools/sql-seed-data-generator</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
+  <url>
+    <loc>https://localmock.dev/tools/dummy-data-generator</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/tools/fake-data-generator</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/tools/random-data-generator</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/tools/sample-data-generator</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/tools/database-test-data-generator</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Comparison pages -->
   <url>
     <loc>https://localmock.dev/mockaroo-alternative</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://localmock.dev/templates/users</loc>
-    <lastmod>2026-07-15</lastmod>
+    <loc>https://localmock.dev/generatedata-alternative</loc>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Template pages -->
+  <url>
+    <loc>https://localmock.dev/templates/users</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://localmock.dev/templates/products</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://localmock.dev/templates/orders</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://localmock.dev/templates/invoices</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
   </url>
   <url>
     <loc>https://localmock.dev/templates/api-logs</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/templates/ecommerce</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://localmock.dev/templates/employees</loc>
+    <lastmod>2026-07-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
   </url>
 </urlset>

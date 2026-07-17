@@ -118,6 +118,105 @@ export const LANDING_PAGES: LandingPage[] = [
     highlights: ['HTTP method and status fields', 'Latency and timestamp data', 'Useful for JSONL and analytics tests'],
     useCases: ['Observability dashboards', 'Log pipeline testing', 'Incident demos', 'API analytics'],
   },
+  // --- Keyword-targeted tool pages ---
+  {
+    path: '/tools/dummy-data-generator',
+    kind: 'tool',
+    title: 'Free Dummy Data Generator — No Signup, No Row Limits | LocalMock',
+    description:
+      'Generate unlimited dummy data in your browser. Build dummy datasets with custom fields, export CSV, JSON, SQL, and more — no account, no server upload.',
+    h1: 'Free dummy data generator',
+    intro:
+      'Create unlimited dummy data for testing, prototyping, and demos directly in your browser. No signup, no row limits. Define fields manually, paste a schema, or choose a template to get started.',
+    highlights: ['No account or signup required', 'Unlimited dummy data generation', 'CSV, JSON, SQL, TypeScript exports', '80+ realistic data types'],
+    useCases: ['Prototype testing', 'Demo environments', 'QA fixtures', 'Seed data for local databases'],
+  },
+  {
+    path: '/tools/fake-data-generator',
+    kind: 'tool',
+    title: 'Free Fake Data Generator Online — CSV, JSON, SQL | LocalMock',
+    description:
+      'Generate fake data online for free. Create realistic fake names, emails, addresses, UUIDs, and custom fields. Export fake data as CSV, JSON, SQL inserts, or TypeScript arrays.',
+    h1: 'Free fake data generator',
+    intro:
+      'Generate realistic fake data online without uploading your schema. LocalMock creates fake names, emails, addresses, products, orders, and 80+ other field types entirely in your browser.',
+    highlights: ['Fake data with 80+ field types', 'Client-side — no data leaves your browser', 'Export as CSV, JSON, SQL, JSONL, MSW, or TypeScript', 'Works as a Mockaroo alternative with no limits'],
+    useCases: ['API mock payloads', 'Frontend state fixtures', 'Demo data', 'QA test datasets'],
+  },
+  {
+    path: '/tools/random-data-generator',
+    kind: 'tool',
+    title: 'Free Random Data Generator — Bulk Random Test Data | LocalMock',
+    description:
+      'Generate random data in bulk for testing and development. LocalMock produces random names, numbers, dates, UUIDs, and custom fields client-side — no signup needed.',
+    h1: 'Free random data generator',
+    intro:
+      'Create large volumes of random test data directly in your browser. LocalMock uses Web Workers to generate random names, emails, numbers, UUIDs, dates, and custom fields without blocking the UI.',
+    highlights: ['Bulk random data generation', 'Web Worker streaming — no UI freeze', '80+ random field types', 'Export random data as CSV, JSON, or SQL'],
+    useCases: ['Load testing datasets', 'Performance benchmarks', 'Random seed data', 'Chaos testing scenarios'],
+  },
+  {
+    path: '/tools/sample-data-generator',
+    kind: 'tool',
+    title: 'Free Sample Data Generator — Realistic Sample Datasets | LocalMock',
+    description:
+      'Generate realistic sample data for testing, prototyping, and demos. Build sample datasets with custom fields, templates, or schema parsing and export as CSV, JSON, or SQL.',
+    h1: 'Free sample data generator',
+    intro:
+      'Create representative sample datasets for any use case — user records, product catalogs, orders, invoices, API logs, and more. LocalMock generates sample data with realistic values for testing, demos, and prototyping.',
+    highlights: ['Realistic sample datasets for any domain', 'Templates for common data shapes', 'Schema-aware generation from Prisma or TypeScript', 'Export sample data as CSV, JSON, SQL, or TypeScript'],
+    useCases: ['Demo datasets', 'Import pipeline testing', 'Prototype datasets', 'Documentation examples'],
+  },
+  {
+    path: '/tools/database-test-data-generator',
+    kind: 'tool',
+    title: 'Database Test Data Generator — SQL Seed Data | LocalMock',
+    description:
+      'Generate database test data with referential integrity. Create relational SQL seed data for Postgres, MySQL, and SQLite from Prisma schemas, TypeScript types, or manual fields.',
+    h1: 'Database test data generator',
+    intro:
+      'Generate realistic database test data with multi-table support and foreign key integrity. LocalMock parses Prisma schemas and TypeScript types to produce SQL insert statements for local databases, CI fixtures, and integration tests.',
+    highlights: ['Relational SQL seed data with FK integrity', 'Prisma and TypeScript schema parsing', 'Postgres, MySQL, and SQLite inserts', 'Chaos data for validation testing'],
+    useCases: ['Database seeding', 'Integration test fixtures', 'Migration validation', 'Local development databases'],
+  },
+  // --- Comparison pages ---
+  {
+    path: '/generatedata-alternative',
+    kind: 'comparison',
+    title: 'GenerateData Alternative — Browser-Private Data Generation | LocalMock',
+    description:
+      'LocalMock is a GenerateData alternative for teams who want private, browser-based data generation with Prisma support, relational data, and developer export formats.',
+    h1: 'GenerateData alternative for local-first data generation',
+    intro:
+      'GenerateData.com is a popular online data tool. LocalMock offers a modern alternative focused on privacy, developer schemas, relational multi-table data, and no signup.',
+    highlights: ['No server upload — data stays in browser', 'Prisma, TypeScript, and JSON schema support', 'Relational mock data with FK integrity', 'Developer-first CSV, JSON, SQL, MSW, TypeScript exports'],
+    useCases: ['Private schema workflows', 'Relational database seeding', 'Developer-first data generation', 'Fast no-account data generation'],
+  },
+  // --- Template pages ---
+  {
+    path: '/templates/ecommerce',
+    kind: 'template',
+    title: 'E-Commerce Test Data Template — Products, Orders, Users | LocalMock',
+    description:
+      'Generate e-commerce test data including products, orders, users, and invoices with relational integrity. Export as CSV, JSON, or SQL for commerce testing.',
+    h1: 'E-commerce test data template',
+    intro:
+      'Create complete e-commerce datasets with relational products, orders, users, and invoices. Perfect for testing checkout flows, analytics dashboards, and commerce API integrations.',
+    highlights: ['Products, orders, users, and invoices in one dataset', 'Relational mock data with FK integrity', 'Realistic prices, SKUs, statuses, and dates', 'CSV, JSON, and SQL exports'],
+    useCases: ['Checkout flow testing', 'Commerce dashboard demos', 'Order management QA', 'Analytics pipeline testing'],
+  },
+  {
+    path: '/templates/employees',
+    kind: 'template',
+    title: 'Employee Mock Data Template — HR & Workforce Data | LocalMock',
+    description:
+      'Generate employee mock data for HR systems, directory demos, payroll testing, and org chart prototypes with realistic names, departments, roles, and salaries.',
+    h1: 'Employee mock data template',
+    intro:
+      'Create realistic employee datasets for HR demos, directory applications, onboarding workflows, and payroll system testing. Fields include names, emails, departments, roles, salaries, and hire dates.',
+    highlights: ['Realistic employee fields (name, role, dept, salary)', 'CSV, JSON, and SQL exports', 'Good for HR and workforce app testing', 'Pairs well with user and order templates'],
+    useCases: ['HR system demos', 'Directory app testing', 'Payroll validation', 'Org chart prototypes'],
+  },
 ];
 
 export function findLandingPage(pathname: string) {
