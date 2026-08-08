@@ -6,6 +6,7 @@ LocalMock is a browser-local synthetic data generator. Schema parsing and data g
 
 - Capability manifest: https://localmock.dev/api/capabilities.json
 - Generation job JSON Schema: https://localmock.dev/schemas/generation-job-v1.json
+- Generation loop report JSON Schema: https://localmock.dev/schemas/generation-loop-v1.json
 - Human application: https://localmock.dev/
 
 ## Supported inputs
@@ -25,6 +26,10 @@ CSV, TSV, JSON, JSON Lines, PostgreSQL/MySQL/SQLite inserts, XML, Cassandra CQL,
 5. Do not claim cryptographic or standards validity unless the selected generator explicitly guarantees it.
 6. Preserve the generation manifest with long-lived fixtures so they can be reproduced.
 
+
+## Loop execution contract
+
+Important operations follow a bounded plan, execute, observe, validate, diagnose, repair, verify, and complete lifecycle. A run is successful only when current validation evidence passes. Safe deterministic foreign-key repairs may run automatically; ambiguous schema changes and unsafe constraint repairs return needs_input. Every loop report includes status, operation, run_id, seed, iteration, validation, errors, warnings, and next_action. Agents should inspect these fields instead of inferring success from visible UI state.
 ## Privacy and safety
 
 Generation does not require uploading schemas or datasets. Browser automation must still request user approval before selecting or overwriting files. Agents should not generate unusually large datasets without first presenting the row count and expected output size.

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://localmock.dev/schemas/generation-loop-v1.json",
+  "title": "LocalMock Generation Loop Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "status", "operation", "run_id", "seed", "iteration", "result", "validation", "errors", "warnings", "next_action"],
+  "properties": {
+    "version": { "const": 1 },
+    "status": { "enum": ["success", "failed", "repairing", "needs_input"] },
+    "operation": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "seed": { "type": ["string", "number"] },
+    "iteration": { "type": "integer", "minimum": 0 },
+    "result": {},
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "errors", "warnings"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+        "warnings": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } }
+      }
+    },
+    "errors": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+    "warnings": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+    "next_action": { "type": "string" }
+  },
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "path", "message", "severity", "retryable", "repairable"],
+      "properties": {
+        "code": { "type": "string" },
+        "path": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": { "enum": ["error", "warning"] },
+        "retryable": { "type": "boolean" },
+        "repairable": { "type": "boolean" },
+        "details": { "type": "object" },
+        "suggestedActions": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

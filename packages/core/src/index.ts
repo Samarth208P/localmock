@@ -4,3 +4,4 @@ export * from './generators';
 export * from './chaos';
 export * from './exports';
 export * from './jobs';
+export * from './loops';
