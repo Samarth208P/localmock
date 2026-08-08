@@ -13,12 +13,13 @@ interface SchemaEditorProps {
   initialFields?: FieldRow[];
   onGenerate?: (mode: InputMode) => void;
   hasSchema?: boolean;
+  initialMode?: InputMode;
 }
 
-export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSchema }: SchemaEditorProps) {
+export function SchemaEditor({ onFieldsChange, initialFields, onGenerate, hasSchema, initialMode }: SchemaEditorProps) {
   const { rawInput, setRawInput, setParsedSchema, setParseError, parsedSchema } = useSchemaStore();
   const [mode, setMode] = useState<InputMode>(
-    rawInput || parsedSchema ? 'paste' : initialFields && initialFields.length > 0 ? 'build' : 'build'
+    initialMode || (rawInput || parsedSchema ? 'paste' : initialFields && initialFields.length > 0 ? 'build' : 'build')
   );
   const [isFocused, setIsFocused] = useState(false);
   const [restoredFields, setRestoredFields] = useState<FieldRow[] | undefined>(initialFields);

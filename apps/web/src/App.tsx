@@ -145,7 +145,13 @@ function App() {
   const fieldsRef = useRef<FieldRow[]>([]);
   const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
   const [hasManualFields, setHasManualFields] = useState(false);
-  const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>('build');
+  const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>(() =>
+    parsedSchema && parsedSchema.format !== 'manual'
+      ? 'paste'
+      : multiTable.tables.length > 0
+        ? 'multi-table'
+        : 'build',
+  );
 
   // Hydrate schema from URL on initial load
   useEffect(() => {
@@ -215,7 +221,7 @@ function App() {
         return {
           tableName: table.name,
           fields: table.fields
-            .filter((field) => field.name.trim())
+            .filter((field) => field.name.trim() && field.enabled !== false)
             .map((field) => ({
               name: field.name,
               typeId: field.typeId,
@@ -250,9 +256,9 @@ function App() {
           const table = parsedSchema.tables.find((candidate) => candidate.name === name)!;
           return {
             tableName: name,
-            fields: table.columns.map((column) => ({
+            fields: table.columns.filter((column) => column.enabled !== false).map((column) => ({
               name: column.name,
-              typeId: column.type,
+              typeId: column.fakerMethod || column.type,
               options: column.options || {},
               unique: column.isUnique,
               primaryKey: column.isPrimaryKey,
@@ -272,9 +278,9 @@ function App() {
       }
 
       const table = parsedSchema.tables[0];
-      const fieldDefs: FieldDef[] = table.columns.map((column) => ({
+      const fieldDefs: FieldDef[] = table.columns.filter((column) => column.enabled !== false).map((column) => ({
         name: column.name,
-        typeId: column.type,
+        typeId: column.fakerMethod || column.type,
         options: column.options || {},
         unique: column.isUnique,
         primaryKey: column.isPrimaryKey,
@@ -285,7 +291,7 @@ function App() {
     }
 
     const fieldDefs: FieldDef[] = fieldsRef.current
-      .filter((field) => field.name.trim())
+      .filter((field) => field.name.trim() && field.enabled !== false)
       .map((field) => ({
         name: field.name,
         typeId: field.typeId,
@@ -365,6 +371,7 @@ function App() {
                   initialFields={fieldsRef.current.length > 0 ? fieldsRef.current : urlFields} 
                   onGenerate={handleProceedToConfigure}
                   hasSchema={hasSchema}
+                  initialMode={activeGeneratorSource}
                 />
               </div>
 
@@ -523,7 +530,12 @@ function App() {
 
               {/* Column summary from parsed schema (paste mode) */}
               <div className="mt-8">
-                <ColumnList />
+                <ColumnList
+                  source={activeGeneratorSource}
+                  onSchemaFieldsChange={activeGeneratorSource === 'paste' || activeGeneratorSource === 'multi-table'
+                    ? undefined
+                    : handleFieldsChange}
+                />
               </div>
 
               {/* Row count + Chaos side by side */}

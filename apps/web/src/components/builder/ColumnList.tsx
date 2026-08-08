@@ -1,104 +1,147 @@
-import { useSchemaStore } from '@/store/schemaStore';
+import { useMemo } from 'react';
+import { useSchemaStore, type ParsedColumn, type ParsedSchema } from '@/store/schemaStore';
+import { useMultiTableStore } from '@/store/multiTableStore';
+import type { FieldRow } from '@/components/editor/FieldBuilder';
 import { ColumnRow } from './ColumnRow';
 
-export function ColumnList() {
-  const { parsedSchema, setParsedSchema } = useSchemaStore();
+type ColumnSource = 'build' | 'paste' | 'multi-table' | 'template';
 
-  if (!parsedSchema || parsedSchema.tables.length === 0) return null;
+interface ColumnListProps {
+  source: ColumnSource;
+  onSchemaFieldsChange?: (fields: FieldRow[]) => void;
+}
+
+export function ColumnList({ source, onSchemaFieldsChange }: ColumnListProps) {
+  const { parsedSchema, setParsedSchema } = useSchemaStore();
+  const multiTable = useMultiTableStore();
+
+  const schema = useMemo<ParsedSchema | null>(() => {
+    if (source !== 'multi-table') return parsedSchema;
+
+    const tableNames = new Map(multiTable.tables.map((table) => [table.id, table.name]));
+    return {
+      raw: '',
+      format: 'multi-table',
+      tables: multiTable.tables.map((table) => ({
+        name: table.name,
+        columns: table.fields.map((field): ParsedColumn => ({
+          id: field.id,
+          name: field.name,
+          type: field.typeId,
+          fakerMethod: field.typeId,
+          confidence: 'high',
+          isUnique: field.unique,
+          isSequential: field.typeId === 'autoIncrement',
+          isPrimaryKey: field.isPrimaryKey,
+          options: field.options,
+          nullPercentage: field.nullPercentage,
+          enabled: field.enabled !== false,
+        })),
+        relations: multiTable.foreignKeys
+          .filter((foreignKey) => foreignKey.fromTable === table.id)
+          .map((foreignKey) => ({
+            fromTable: table.name,
+            fromField: foreignKey.fromField,
+            toTable: tableNames.get(foreignKey.toTable) || foreignKey.toTable,
+            toField: foreignKey.toField,
+            cardinality: 'many-to-one',
+          })),
+      })),
+    };
+  }, [multiTable.foreignKeys, multiTable.tables, parsedSchema, source]);
+
+  if (!schema || schema.tables.length === 0) return null;
+
+  const commitSchema = (updated: ParsedSchema) => {
+    if (source === 'multi-table') {
+      updated.tables.forEach((table, tableIndex) => {
+        const originalTable = multiTable.tables[tableIndex];
+        if (!originalTable) return;
+        multiTable.setTableFields(originalTable.id, table.columns.map((column) => {
+          const original = originalTable.fields.find((field) => field.id === column.id);
+          return {
+            ...original,
+            id: column.id,
+            name: column.name,
+            typeId: column.fakerMethod || column.type,
+            options: column.options || {},
+            unique: column.isUnique,
+            isPrimaryKey: column.isPrimaryKey,
+            nullPercentage: column.nullPercentage,
+            enabled: column.enabled !== false,
+          };
+        }));
+      });
+      return;
+    }
+
+    setParsedSchema(updated);
+    const firstTable = updated.tables[0];
+    if (firstTable && onSchemaFieldsChange) {
+      onSchemaFieldsChange(firstTable.columns.map((column) => ({
+        id: column.id,
+        name: column.name,
+        typeId: column.fakerMethod || column.type,
+        options: column.options || {},
+        unique: column.isUnique,
+        isPrimaryKey: column.isPrimaryKey,
+        nullPercentage: column.nullPercentage,
+        enabled: column.enabled !== false,
+      })));
+    }
+  };
+
+  const updateColumn = (columnId: string, update: (column: ParsedColumn) => ParsedColumn) => {
+    commitSchema({
+      ...schema,
+      tables: schema.tables.map((table) => ({
+        ...table,
+        columns: table.columns.map((column) => column.id === columnId ? update(column) : column),
+      })),
+    });
+  };
 
   const handleTypeChange = (columnId: string, newType: string, newFakerMethod: string) => {
-    const updated = {
-      ...parsedSchema,
-      tables: parsedSchema.tables.map((table) => ({
-        ...table,
-        columns: table.columns.map((col) =>
-          col.id === columnId
-            ? { ...col, type: newType, fakerMethod: newFakerMethod, confidence: 'high' as const }
-            : col,
-        ),
-      })),
-    };
-    setParsedSchema(updated);
-  };
-
-  const handleUpdateOption = (columnId: string, key: string, value: any) => {
-    const updated = {
-      ...parsedSchema,
-      tables: parsedSchema.tables.map((table) => ({
-        ...table,
-        columns: table.columns.map((col) =>
-          col.id === columnId
-            ? { ...col, options: { ...(col.options || {}), [key]: value } }
-            : col,
-        ),
-      })),
-    };
-    setParsedSchema(updated);
-  };
-
-  const handleUpdateNullPercentage = (columnId: string, percentage: number) => {
-    const updated = {
-      ...parsedSchema,
-      tables: parsedSchema.tables.map((table) => ({
-        ...table,
-        columns: table.columns.map((col) =>
-          col.id === columnId ? { ...col, nullPercentage: percentage } : col,
-        ),
-      })),
-    };
-    setParsedSchema(updated);
-  };
-
-  const handleConfirm = (columnId: string) => {
-    const updated = {
-      ...parsedSchema,
-      tables: parsedSchema.tables.map((table) => ({
-        ...table,
-        columns: table.columns.map((col) =>
-          col.id === columnId ? { ...col, confidence: 'high' as const } : col,
-        ),
-      })),
-    };
-    setParsedSchema(updated);
+    updateColumn(columnId, (column) => ({
+      ...column,
+      type: newType,
+      fakerMethod: newFakerMethod,
+      confidence: 'high',
+    }));
   };
 
   const handleConfirmAll = () => {
-    const updated = {
-      ...parsedSchema,
-      tables: parsedSchema.tables.map((table) => ({
+    commitSchema({
+      ...schema,
+      tables: schema.tables.map((table) => ({
         ...table,
-        columns: table.columns.map((col) => ({ ...col, confidence: 'high' as const })),
+        columns: table.columns.map((column) => ({ ...column, confidence: 'high' })),
       })),
-    };
-    setParsedSchema(updated);
+    });
   };
 
-  const hasUnconfirmed = parsedSchema.tables.some((t) =>
-    t.columns.some((c) => c.confidence !== 'high'),
+  const columnCount = schema.tables.reduce((count, table) => count + table.columns.length, 0);
+  const hasUnconfirmed = schema.tables.some((table) =>
+    table.columns.some((column) => column.confidence !== 'high'),
   );
 
   return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-medium text-text-muted uppercase tracking-wide">
-          Detected Columns ({parsedSchema.tables[0]?.columns.length || 0})
+    <section className="mt-4" aria-labelledby="detected-columns-heading">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 id="detected-columns-heading" className="text-xs font-medium uppercase tracking-wide text-text-muted">
+          Detected Columns ({columnCount})
         </h3>
         {hasUnconfirmed && (
-          <button
-            onClick={handleConfirmAll}
-            className="text-xs text-accent hover:text-accent-hover transition-colors"
-          >
+          <button onClick={handleConfirmAll} className="text-xs text-accent transition-colors hover:text-accent-hover">
             Accept All
           </button>
         )}
       </div>
 
-      {parsedSchema.tables.map((table) => (
+      {schema.tables.map((table) => (
         <div key={table.name} className="space-y-1.5">
-          {parsedSchema.tables.length > 1 && (
-            <p className="text-xs font-medium text-text-secondary mt-3 mb-1">
-              {table.name}
-            </p>
+          {schema.tables.length > 1 && (
+            <p className="mb-1 mt-3 text-xs font-medium text-text-secondary">{table.name}</p>
           )}
           {table.columns.map((column) => (
             <ColumnRow
@@ -106,13 +149,23 @@ export function ColumnList() {
               column={column}
               tableRelations={table.relations || []}
               onTypeChange={handleTypeChange}
-              onUpdateOption={handleUpdateOption}
-              onUpdateNullPercentage={handleUpdateNullPercentage}
-              onConfirm={handleConfirm}
+              onUpdateOption={(columnId, key, value) => updateColumn(columnId, (current) => ({
+                ...current,
+                options: { ...(current.options || {}), [key]: value },
+              }))}
+              onUpdateNullPercentage={(columnId, percentage) => updateColumn(columnId, (current) => ({
+                ...current,
+                nullPercentage: percentage,
+              }))}
+              onConfirm={(columnId) => updateColumn(columnId, (current) => ({ ...current, confidence: 'high' }))}
+              onToggleEnabled={(columnId) => updateColumn(columnId, (current) => ({
+                ...current,
+                enabled: current.enabled === false,
+              }))}
             />
           ))}
         </div>
       ))}
-    </div>
+    </section>
   );
 }

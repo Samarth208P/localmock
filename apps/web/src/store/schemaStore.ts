@@ -13,6 +13,7 @@ export interface ParsedColumn {
   isPrimaryKey?: boolean;
   options?: Record<string, any>;
   nullPercentage?: number;
+  enabled?: boolean;
 }
 
 export interface ParsedSchema {

@@ -151,6 +151,7 @@ export function MultiTableBuilder() {
             onFieldsChange={handleFieldsChange}
             onFkToggle={handleFkToggle}
             initialFields={activeTable.fields}
+            commitToSchema={false}
           />
         </div>
       )}
