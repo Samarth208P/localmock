@@ -4,7 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 
 import { SchemaEditor } from '@/components/editor/SchemaEditor';
 import { ColumnList } from '@/components/builder/ColumnList';
-import { PreviewCanvas } from '@/components/preview/PreviewCanvas';
+import { PreviewWorkspace } from '@/components/preview/PreviewWorkspace';
+import { buildConfiguredPreviewSchema, buildParsedPreviewSchema, buildSingleTablePreviewSchema } from '@/components/preview/buildPreviewSchema';
+import type { PreviewSchemaModel } from '@/components/preview/types';
 import { ExportPanel } from '@/components/export/ExportPanel';
 import { ToastContainer } from '@/components/shared/Toast';
 import { LandingPage } from '@/components/seo/LandingPage';
@@ -136,10 +138,14 @@ function App() {
     activeViewTable,
     setActiveViewTable,
     isGenerating,
+    progress,
+    error,
   } = useWorkerPool();
   const [rowCount, setRowCount] = useState(1000);
   const fieldsRef = useRef<FieldRow[]>([]);
-  const lastFieldDefsRef = useRef<FieldDef[]>([]);
+  const fieldDefsByTableRef = useRef<Record<string, FieldDef[]>>({});
+  const [previewSchema, setPreviewSchema] = useState<PreviewSchemaModel>({ tables: [], relationships: [] });
+  const [previewDataMode, setPreviewDataMode] = useState<'single' | 'multi'>('single');
   const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
   const [hasManualFields, setHasManualFields] = useState(false);
   const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>('build');
@@ -155,14 +161,20 @@ function App() {
   }, []);
 
   const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0 || hasManualFields;
-  const tableName = activeViewTable || parsedSchema?.tables[0]?.name || multiTable.tables[0]?.name || 'data';
-
-  // Get the rows for the currently active view table
-  const viewRows = activeViewTable && multiTableRows[activeViewTable]
-    ? multiTableRows[activeViewTable]
-    : rows;
-  const tableNames = Object.keys(multiTableRows);
-  const isMultiTable = tableNames.length > 1;
+  const tableNames = previewSchema.tables.map((table) => table.name);
+  const tableName = activeViewTable && tableNames.includes(activeViewTable)
+    ? activeViewTable
+    : tableNames[0] || 'data';
+  const previewRowsByTable = Object.fromEntries(
+    previewSchema.tables.map((table) => [
+      table.name,
+      previewDataMode === 'multi' ? multiTableRows[table.name] || [] : rows,
+    ]),
+  );
+  const viewRows = previewRowsByTable[tableName] || [];
+  const activeFieldDefs = fieldDefsByTableRef.current[tableName] || [];
+  const activeConfiguredRowCount = previewSchema.tables.find((table) => table.name === tableName)?.configuredRowCount || rowCount;
+  const isMultiTable = previewSchema.tables.length > 1;
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
     fieldsRef.current = fields;
@@ -170,107 +182,155 @@ function App() {
   }, []);
 
   const handleGenerate = useCallback(() => {
-    let fieldDefs: FieldDef[] = [];
-
-    if (activeGeneratorSource === 'build' || activeGeneratorSource === 'template') {
-      fieldDefs = fieldsRef.current
-        .filter((f) => f.name.trim())
-        .map((f) => ({
-          name: f.name,
-          typeId: f.typeId,
-          options: f.options,
-          unique: f.unique,
-        }));
-    } else if (activeGeneratorSource === 'multi-table') {
-      const table = multiTable.tables.find((t) => t.id === multiTable.activeTableId)
-        || multiTable.tables[0];
-      if (table && table.fields.length > 0) {
-        fieldDefs = table.fields
-          .filter((f) => f.name.trim())
-          .map((f) => ({
-            name: f.name,
-            typeId: f.typeId,
-            options: f.options,
-            unique: f.unique,
-          }));
-      }
-    } else if (activeGeneratorSource === 'paste' && parsedSchema && parsedSchema.tables.length > 0) {
-      // Check if we have multiple tables with relations → use multi-table generation
-      const hasRelations = parsedSchema.tables.some(t => t.relations && t.relations.length > 0);
-
-      if (parsedSchema.tables.length > 1 && hasRelations) {
-        // Multi-table relational generation
-        const tableNames = parsedSchema.tables.map(t => t.name);
-
-        // Build dependency edges for topological sort
-        const depEdges: DependencyEdge[] = [];
-        for (const table of parsedSchema.tables) {
-          if (table.relations) {
-            for (const rel of table.relations) {
-              depEdges.push({ from: table.name, to: rel.toTable });
-            }
-          }
+    const generationOptions = chaosStore.enabled
+      ? {
+          chaos: {
+            rate: chaosStore.globalRate,
+            types: {
+              nullInjection: true,
+              whitespace: true,
+              encoding: true,
+              casing: true,
+              formatStrip: true,
+            },
+          },
         }
+      : undefined;
 
-        const sortedNames = sortTablesTopologically(tableNames, depEdges);
+    if (activeGeneratorSource === 'multi-table') {
+      if (multiTable.tables.length === 0) return;
 
-        const multiTableDefs: MultiTableGenDef[] = sortedNames.map(name => {
-          const t = parsedSchema.tables.find(pt => pt.name === name)!;
+      const tableById = new Map(multiTable.tables.map((table) => [table.id, table]));
+      const dependencies: DependencyEdge[] = multiTable.foreignKeys
+        .filter((foreignKey) => tableById.has(foreignKey.fromTable) && tableById.has(foreignKey.toTable))
+        .map((foreignKey) => ({ from: foreignKey.fromTable, to: foreignKey.toTable }));
+      const sortedIds = sortTablesTopologically(multiTable.tables.map((table) => table.id), dependencies);
+
+      const tableDefs: MultiTableGenDef[] = sortedIds.map((tableId) => {
+        const table = tableById.get(tableId)!;
+        return {
+          tableName: table.name,
+          fields: table.fields
+            .filter((field) => field.name.trim())
+            .map((field) => ({
+              name: field.name,
+              typeId: field.typeId,
+              options: field.options,
+              unique: field.unique,
+              primaryKey: field.isPrimaryKey,
+            })),
+          rowCount: table.rowCount,
+          relations: multiTable.foreignKeys
+            .filter((foreignKey) => foreignKey.fromTable === table.id)
+            .flatMap((foreignKey) => {
+              const target = tableById.get(foreignKey.toTable);
+              return target
+                ? [{ fromField: foreignKey.fromField, toTable: target.name, toField: foreignKey.toField }]
+                : [];
+            }),
+        };
+      });
+
+      const configuredPreview = buildConfiguredPreviewSchema(multiTable.tables, multiTable.foreignKeys);
+      setPreviewSchema(configuredPreview);
+      setPreviewDataMode('multi');
+      fieldDefsByTableRef.current = Object.fromEntries(tableDefs.map((table) => [table.tableName, table.fields]));
+      clearSchemaFromUrl();
+      generateMultiTable(tableDefs, generationOptions);
+      setStep('preview');
+      return;
+    }
+
+    if (activeGeneratorSource === 'paste' && parsedSchema && parsedSchema.tables.length > 0) {
+      const parsedPreview = buildParsedPreviewSchema(parsedSchema, rowCount);
+      setPreviewSchema(parsedPreview);
+
+      if (parsedSchema.tables.length > 1) {
+        const dependencies: DependencyEdge[] = parsedSchema.tables.flatMap((table) =>
+          (table.relations || []).map((relation) => ({ from: table.name, to: relation.toTable })));
+        const sortedNames = sortTablesTopologically(parsedSchema.tables.map((table) => table.name), dependencies);
+        const tableDefs: MultiTableGenDef[] = sortedNames.map((name) => {
+          const table = parsedSchema.tables.find((candidate) => candidate.name === name)!;
           return {
             tableName: name,
-            fields: t.columns.map(col => ({
-              name: col.name,
-              typeId: col.type,
-              options: {},
-              unique: col.isUnique,
+            fields: table.columns.map((column) => ({
+              name: column.name,
+              typeId: column.type,
+              options: column.options || {},
+              unique: column.isUnique,
+              primaryKey: column.isPrimaryKey,
             })),
             rowCount,
-            relations: (t.relations || []).map(r => ({
-              fromField: r.fromField,
-              toTable: r.toTable,
-              toField: r.toField,
+            relations: (table.relations || []).map((relation) => ({
+              fromField: relation.fromField,
+              toTable: relation.toTable,
+              toField: relation.toField,
             })),
           };
         });
 
-        // Don't encode multi-table schemas to URL — they're too large.
-        // The raw SQL in schemaStore is the source of truth.
+        setPreviewDataMode('multi');
+        fieldDefsByTableRef.current = Object.fromEntries(tableDefs.map((table) => [table.tableName, table.fields]));
         clearSchemaFromUrl();
-        lastFieldDefsRef.current = multiTableDefs[0].fields;
-
-        generateMultiTable(multiTableDefs);
+        generateMultiTable(tableDefs, generationOptions);
         setStep('preview');
         return;
       }
 
-      // Single table from paste mode
       const table = parsedSchema.tables[0];
-      fieldDefs = table.columns.map((col) => ({
-        name: col.name,
-        typeId: col.type,
-        options: {},
-        unique: col.isUnique,
+      const fieldDefs: FieldDef[] = table.columns.map((column) => ({
+        name: column.name,
+        typeId: column.type,
+        options: column.options || {},
+        unique: column.isUnique,
+        primaryKey: column.isPrimaryKey,
       }));
+      setPreviewDataMode('single');
+      fieldDefsByTableRef.current = { [table.name]: fieldDefs };
+      generate(fieldDefs, rowCount, generationOptions);
+      setStep('preview');
+      return;
     }
 
+    const fieldDefs: FieldDef[] = fieldsRef.current
+      .filter((field) => field.name.trim())
+      .map((field) => ({
+        name: field.name,
+        typeId: field.typeId,
+        options: field.options,
+        unique: field.unique,
+        primaryKey: field.isPrimaryKey,
+      }));
     if (fieldDefs.length === 0) return;
 
-    const historyFields: FieldRow[] = fieldDefs.map((f, i) => ({
-      id: `hist-${i}`,
-      name: f.name,
-      typeId: f.typeId,
-      options: f.options,
-      unique: f.unique,
-    }));
+    const previewName = 'data';
+    setPreviewSchema(buildSingleTablePreviewSchema(previewName, fieldDefs, rowCount));
+    setPreviewDataMode('single');
+    fieldDefsByTableRef.current = { [previewName]: fieldDefs };
 
-    // Encode schema into shareable URL
+    const historyFields: FieldRow[] = fieldDefs.map((field, index) => ({
+      id: 'hist-' + String(index),
+      name: field.name,
+      typeId: field.typeId,
+      options: field.options,
+      unique: field.unique,
+    }));
     encodeSchemaToUrl(historyFields);
 
-    lastFieldDefsRef.current = fieldDefs;
-    generate(fieldDefs, rowCount);
+    generate(fieldDefs, rowCount, generationOptions);
     setStep('preview');
-  }, [parsedSchema, generate, generateMultiTable, setStep, rowCount]);
-
+  }, [
+    activeGeneratorSource,
+    chaosStore.enabled,
+    chaosStore.globalRate,
+    generate,
+    generateMultiTable,
+    multiTable.foreignKeys,
+    multiTable.tables,
+    parsedSchema,
+    rowCount,
+    setStep,
+  ]);
   const handleProceedToConfigure = useCallback((mode: 'build' | 'paste' | 'multi-table' | 'template') => {
     if (hasSchema) {
       setActiveGeneratorSource(mode);
@@ -549,9 +609,9 @@ function App() {
 
         {/* Step 3: Preview + Export */}
         {step === 'preview' && (
-          <div className="animate-in flex flex-1 overflow-hidden">
+          <div className="animate-in flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
             {/* Left sidebar: scrollable export panel */}
-            <aside className="w-[300px] flex-shrink-0 border-r border-border-subtle overflow-y-auto p-5">
+            <aside className="max-h-[42vh] w-full flex-shrink-0 overflow-y-auto border-b border-border-subtle bg-bg-secondary p-5 lg:max-h-none lg:w-[300px] lg:border-b-0 lg:border-r">
               <button
                 onClick={goBack}
                 className="mb-5 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-secondary px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all duration-200 hover:-translate-x-1"
@@ -572,14 +632,14 @@ function App() {
                         key={name}
                         onClick={() => setActiveViewTable(name)}
                         className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                          activeViewTable === name
+                          tableName === name
                             ? 'bg-accent/10 text-accent border border-accent/30'
                             : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary border border-transparent'
                         }`}
                       >
                         <span className="font-mono">{name}</span>
                         <span className="ml-2 text-text-muted">
-                          ({(multiTableRows[name]?.length || 0).toLocaleString()} rows)
+                          ({(previewRowsByTable[name]?.length || 0).toLocaleString()} rows)
                         </span>
                       </button>
                     ))}
@@ -587,7 +647,7 @@ function App() {
                 </div>
               )}
 
-              <ExportPanel rows={viewRows} tableName={tableName} fieldDefs={lastFieldDefsRef.current} totalRowCount={rowCount} />
+              <ExportPanel rows={viewRows} tableName={tableName} fieldDefs={activeFieldDefs} totalRowCount={activeConfiguredRowCount} />
 
               <button
                 onClick={() => setStep('configure')}
@@ -597,10 +657,13 @@ function App() {
               </button>
             </aside>
 
-            {/* Right side: fixed playground canvas */}
-            <section className="flex flex-1 flex-col overflow-hidden relative">
-              <PreviewCanvas />
-            </section>
+            <PreviewWorkspace
+              schema={previewSchema}
+              rowsByTable={previewRowsByTable}
+              isGenerating={isGenerating}
+              progress={progress}
+              error={error}
+            />
           </div>
         )}
       </main>

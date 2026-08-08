@@ -1,0 +1,25 @@
+{
+  "name": "LocalMock",
+  "version": "0.1.0",
+  "jobSchema": "https://localmock.dev/schemas/generation-job-v1.json",
+  "execution": ["browser"],
+  "inputs": ["json", "typescript", "prisma", "sql", "go", "python", "rust"],
+  "outputs": ["csv", "json", "jsonl", "sql", "tsv", "xml", "cql", "msw", "typescript"],
+  "features": {
+    "deterministicSeed": true,
+    "streaming": true,
+    "relational": true,
+    "chaos": true,
+    "structuredValidation": true,
+    "generationManifest": true
+  },
+  "limits": {
+    "maximumRowsPerTable": 1000000,
+    "chaosRateMaximum": 30
+  },
+  "privacy": {
+    "generationLocation": "browser",
+    "schemaUploadRequired": false,
+    "accountRequired": false
+  }
+}
