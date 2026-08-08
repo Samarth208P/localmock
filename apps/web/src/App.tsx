@@ -171,6 +171,20 @@ function App() {
 
   const handleGenerate = useCallback(() => {
     let fieldDefs: FieldDef[] = [];
+    const generationOptions = chaosStore.enabled
+      ? {
+          chaos: {
+            rate: chaosStore.globalRate,
+            types: {
+              nullInjection: true,
+              whitespace: true,
+              encoding: true,
+              casing: true,
+              formatStrip: true,
+            },
+          },
+        }
+      : undefined;
 
     if (activeGeneratorSource === 'build' || activeGeneratorSource === 'template') {
       fieldDefs = fieldsRef.current
@@ -180,6 +194,7 @@ function App() {
           typeId: f.typeId,
           options: f.options,
           unique: f.unique,
+          primaryKey: f.isPrimaryKey,
         }));
     } else if (activeGeneratorSource === 'multi-table') {
       const table = multiTable.tables.find((t) => t.id === multiTable.activeTableId)
@@ -192,6 +207,7 @@ function App() {
             typeId: f.typeId,
             options: f.options,
             unique: f.unique,
+            primaryKey: f.isPrimaryKey,
           }));
       }
     } else if (activeGeneratorSource === 'paste' && parsedSchema && parsedSchema.tables.length > 0) {
@@ -223,6 +239,7 @@ function App() {
               typeId: col.type,
               options: {},
               unique: col.isUnique,
+              primaryKey: col.isPrimaryKey,
             })),
             rowCount,
             relations: (t.relations || []).map(r => ({
@@ -238,7 +255,7 @@ function App() {
         clearSchemaFromUrl();
         lastFieldDefsRef.current = multiTableDefs[0].fields;
 
-        generateMultiTable(multiTableDefs);
+        generateMultiTable(multiTableDefs, generationOptions);
         setStep('preview');
         return;
       }
@@ -250,6 +267,7 @@ function App() {
         typeId: col.type,
         options: {},
         unique: col.isUnique,
+        primaryKey: col.isPrimaryKey,
       }));
     }
 
@@ -267,9 +285,9 @@ function App() {
     encodeSchemaToUrl(historyFields);
 
     lastFieldDefsRef.current = fieldDefs;
-    generate(fieldDefs, rowCount);
+    generate(fieldDefs, rowCount, generationOptions);
     setStep('preview');
-  }, [parsedSchema, generate, generateMultiTable, setStep, rowCount]);
+  }, [parsedSchema, generate, generateMultiTable, setStep, rowCount, activeGeneratorSource, multiTable, chaosStore.enabled, chaosStore.globalRate]);
 
   const handleProceedToConfigure = useCallback((mode: 'build' | 'paste' | 'multi-table' | 'template') => {
     if (hasSchema) {

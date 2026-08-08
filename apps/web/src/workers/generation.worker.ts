@@ -11,7 +11,9 @@
  * - Relational context: foreign key fields draw from parent table values
  */
 
-import { generateTypedValue, createCtx } from '@localmock/core/generators';
+import { generateTypedValue, createCtx, seedFromString } from '@localmock/core/generators';
+import { applyChaos } from '@localmock/core/chaos';
+import type { ChaosConfig } from '@localmock/core/chaos';
 
 // --- Message types ---
 
@@ -20,6 +22,7 @@ export interface FieldDef {
   typeId: string;
   options: Record<string, unknown>;
   unique: boolean;
+  primaryKey?: boolean;
   /** If set, this field draws values from relationalContext[foreignKeyRef] instead of generating */
   foreignKeyRef?: string;
 }
@@ -28,6 +31,12 @@ export interface GenerateMessage {
   type: 'generate';
   fields: FieldDef[];
   rowCount: number;
+  totalRowCount: number;
+  startRowIndex: number;
+  seed: string | number;
+  tableId?: string;
+  chaos?: ChaosConfig;
+
   /** Maps "tableName.fieldName" -> array of values from parent tables */
   relationalContext?: Record<string, unknown[]>;
 }
@@ -57,59 +66,61 @@ export type WorkerOutMessage = GenerateResult | GeneratePartial | GenerateProgre
 
 // --- Constants ---
 
-const COLLISION_LIMIT = 50;
+function makeUniqueValue(value: unknown, field: FieldDef, globalIndex: number): unknown {
+  if (!field.unique || field.typeId === 'uuid' || field.typeId === 'autoIncrement') return value;
+  if (field.typeId === 'enum') {
+    const values = String(field.options.values ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+    return values[globalIndex];
+  }
+  if (field.typeId === 'boolean') return globalIndex < 2 ? globalIndex === 0 : undefined;
+  if (typeof value === 'number') {
+    const min = Number(field.options.min ?? 0);
+    const step = field.typeId === 'float' ? Number(field.options.uniqueStep ?? 0.001) : 1;
+    return min + globalIndex * step;
+  }
+  if (typeof value === 'string') {
+    const suffix = globalIndex.toString(36);
+    const at = value.lastIndexOf('@');
+    if (at > 0) return value.slice(0, at) + '+' + suffix + value.slice(at);
+    return value + '_' + suffix;
+  }
+  return value;
+}
 const CHUNK_SIZE = 1000;
 const PARTIAL_PREVIEW_SIZE = 10;
 
 // --- Worker handler ---
 
 self.onmessage = (event: MessageEvent<GenerateMessage>) => {
-  const { fields, rowCount, relationalContext } = event.data;
+  const { fields, rowCount, totalRowCount = rowCount, startRowIndex = 0, seed = 'localmock', tableId = 'data', chaos, relationalContext } = event.data;
 
   try {
     const rows: Record<string, unknown>[] = [];
 
-    // Unique tracking: one Set per unique-enabled column
-    const uniqueSets: Map<string, Set<unknown>> = new Map();
-    for (const field of fields) {
-      if (field.unique) {
-        uniqueSets.set(field.name, new Set());
-      }
-    }
-
-    // Auto-increment counters per column
-    const counters: Map<string, number> = new Map();
-    for (const field of fields) {
-      if (field.typeId === 'autoIncrement') {
-        counters.set(field.name, 0);
-      }
-    }
 
     for (let i = 0; i < rowCount; i++) {
       // Fresh context per row — correlated identity data
-      const ctx = createCtx();
+      const globalIndex = startRowIndex + i;
+      const rowSeed = seedFromString([String(seed), tableId, String(globalIndex)].join(':'));
+      const ctx = createCtx(rowSeed);
       const row: Record<string, unknown> = {};
 
       for (const field of fields) {
         // If this field is a foreign key with relational context, pick from parent values
         if (field.foreignKeyRef && relationalContext && relationalContext[field.foreignKeyRef]) {
           const parentValues = relationalContext[field.foreignKeyRef];
-          row[field.name] = parentValues[Math.floor(Math.random() * parentValues.length)];
+          row[field.name] = ctx.rng.pick(parentValues);
           continue;
         }
 
         // Build options with internal counter for autoIncrement
         const opts = { ...field.options };
-        if (field.typeId === 'autoIncrement') {
-          const count = counters.get(field.name) || 0;
-          opts.__counter = count;
-          counters.set(field.name, count + 1);
-        }
+        if (field.typeId === 'autoIncrement') opts.__counter = globalIndex;
 
         let value: unknown;
 
         if (field.unique) {
-          const seen = uniqueSets.get(field.name)!;
+          const seen = new Set<unknown>();
           let attempts = 0;
 
           do {
@@ -118,7 +129,7 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
             value = generateTypedValue(field.typeId, opts, retryCtx);
             attempts++;
 
-            if (attempts > COLLISION_LIMIT) {
+            if (attempts > 50) {
               // Instead of crashing, append a unique suffix based on the set size
               value = typeof value === 'string' 
                 ? `${value}_${seen.size}`
@@ -134,6 +145,9 @@ self.onmessage = (event: MessageEvent<GenerateMessage>) => {
           value = generateTypedValue(field.typeId, opts, ctx);
         }
 
+        value = makeUniqueValue(value, field, globalIndex);
+        if (chaos && !field.primaryKey && !field.unique && !field.foreignKeyRef) value = applyChaos(value, chaos, () => ctx.rng.next());
+        if (field.unique && value === undefined) throw new Error('Unique domain exhausted for "' + field.name + '" at row ' + String(globalIndex + 1) + ' of ' + String(totalRowCount) + '.');
         row[field.name] = value;
       }
 

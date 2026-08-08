@@ -1,0 +1,34 @@
+# LocalMock operational guide for AI agents
+
+LocalMock is a browser-local synthetic data generator. Schema parsing and data generation run on the user's device. An account is not required.
+
+## Machine-readable contracts
+
+- Capability manifest: https://localmock.dev/api/capabilities.json
+- Generation job JSON Schema: https://localmock.dev/schemas/generation-job-v1.json
+- Human application: https://localmock.dev/
+
+## Supported inputs
+
+JSON samples, TypeScript interfaces and object type aliases, Prisma models, SQL CREATE TABLE statements, Go structs, Python classes, and Rust structs. Parsing is best effort; agents should review inferred field types before generation.
+
+## Supported outputs
+
+CSV, TSV, JSON, JSON Lines, PostgreSQL/MySQL/SQLite inserts, XML, Cassandra CQL, MSW handlers, and TypeScript arrays.
+
+## Reliable automation rules
+
+1. Supply an explicit seed for reproducible output.
+2. Validate the generation job before generating data.
+3. Review warnings and estimated row counts before large exports.
+4. Treat generated files as untrusted test fixtures until application-specific validation passes.
+5. Do not claim cryptographic or standards validity unless the selected generator explicitly guarantees it.
+6. Preserve the generation manifest with long-lived fixtures so they can be reproduced.
+
+## Privacy and safety
+
+Generation does not require uploading schemas or datasets. Browser automation must still request user approval before selecting or overwriting files. Agents should not generate unusually large datasets without first presenting the row count and expected output size.
+
+## Current execution surface
+
+The supported execution surface is the browser application. CLI and MCP execution are not advertised in the capability manifest until those packages are released and tested.

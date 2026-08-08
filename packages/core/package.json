@@ -11,7 +11,8 @@
     "./dag": "./src/dag/index.ts",
     "./generators": "./src/generators/index.ts",
     "./chaos": "./src/chaos/index.ts",
-    "./exports": "./src/exports/index.ts"
+    "./exports": "./src/exports/index.ts",
+    "./jobs": "./src/jobs/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

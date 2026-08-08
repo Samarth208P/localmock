@@ -69,13 +69,15 @@ export function useStreamingExport(): UseStreamingExportReturn {
           { type: 'module' },
         );
         workerRef.current = worker;
+        let writeChain: Promise<void> = Promise.resolve();
 
         worker.onmessage = async (event) => {
           const data = event.data;
 
           switch (data.type) {
             case 'chunk':
-              await writable.write(data.text);
+              writeChain = writeChain.then(() => writable.write(data.text));
+              await writeChain;
               break;
 
             case 'stream-progress':
@@ -88,6 +90,7 @@ export function useStreamingExport(): UseStreamingExportReturn {
               break;
 
             case 'stream-done':
+              await writeChain;
               await writable.close();
               setIsStreaming(false);
               setProgress({ generated: data.totalRows, total: data.totalRows, eta: 0, percent: 100 });

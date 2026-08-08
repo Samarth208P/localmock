@@ -6,6 +6,7 @@
  * main thread merges results in order.
  */
 
+import type { ChaosConfig } from '@localmock/core/chaos';
 import type { FieldDef, WorkerOutMessage } from '@/workers/generation.worker';
 
 export interface PoolProgress {
@@ -21,13 +22,16 @@ export interface WorkerPoolOptions {
   onPartial?: (rows: Record<string, unknown>[]) => void;
   maxWorkers?: number;
   relationalContext?: Record<string, unknown[]>;
+  seed?: string | number;
+  tableId?: string;
+  chaos?: ChaosConfig;
 }
 
 export interface WorkerPoolResult {
   rows: Record<string, unknown>[];
   duration: number; // ms
+  seed: string | number;
 }
-
 /**
  * Get optimal worker count for the current machine.
  */
@@ -51,8 +55,9 @@ function splitWork(total: number, chunks: number): number[] {
  * Run generation across a pool of workers in parallel.
  */
 export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolResult> {
-  const { fields, rowCount, onProgress, onPartial, maxWorkers, relationalContext } = options;
-  const workerCount = getWorkerCount(maxWorkers);
+  const { fields, rowCount, onProgress, onPartial, maxWorkers, relationalContext, tableId = 'data', chaos } = options;
+  const seed = options.seed ?? String(Date.now()) + '-' + String(performance.now());
+  const workerCount = Math.max(1, Math.min(rowCount, getWorkerCount(maxWorkers)));
   const chunks = splitWork(rowCount, workerCount);
   const start = performance.now();
 
@@ -107,6 +112,7 @@ export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolRes
               resolve({
                 rows: allRows,
                 duration: Math.round(performance.now() - start),
+                seed,
               });
             }
             break;
@@ -132,6 +138,11 @@ export function runWorkerPool(options: WorkerPoolOptions): Promise<WorkerPoolRes
         fields,
         rowCount: chunks[i],
         relationalContext,
+        totalRowCount: rowCount,
+        startRowIndex: chunks.slice(0, i).reduce((total, size) => total + size, 0),
+        seed,
+        tableId,
+        chaos,
       });
     }
   });

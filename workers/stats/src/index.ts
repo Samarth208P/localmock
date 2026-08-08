@@ -16,6 +16,7 @@ interface Env {
 
 const KV_TOTAL_ROWS = 'total_rows';
 const KV_TOTAL_GENERATIONS = 'total_generations';
+const MAX_ROWS_PER_INCREMENT = 1_000_000;
 
 function corsHeaders(origin: string, allowedOrigin: string): Record<string, string> {
   const isAllowed = origin === allowedOrigin || allowedOrigin === '*';
@@ -40,13 +41,16 @@ export default {
 
     // POST /increment
     if (request.method === 'POST' && url.pathname === '/increment') {
+      if (!(origin === env.ALLOWED_ORIGIN || env.ALLOWED_ORIGIN === '*')) {
+        return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
+      }
       try {
         const body = await request.json<{ rows?: number }>();
-        const rows = typeof body.rows === 'number' && body.rows > 0 ? body.rows : 0;
+        const rows = typeof body.rows === 'number' && Number.isSafeInteger(body.rows) && body.rows > 0 && body.rows <= MAX_ROWS_PER_INCREMENT ? body.rows : 0;
 
         if (rows === 0) {
           return Response.json(
-            { error: 'Invalid rows count' },
+            { error: 'Rows must be an integer between 1 and 1,000,000' },
             { status: 400, headers },
           );
         }
