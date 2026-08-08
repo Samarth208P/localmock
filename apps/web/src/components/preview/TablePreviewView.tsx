@@ -1,9 +1,11 @@
+import type { LoopValidation } from '@localmock/core/loops';
 import type { PreviewRowsByTable, PreviewSchemaModel } from './types';
 
 interface TablePreviewViewProps {
   schema: PreviewSchemaModel;
   rowsByTable: PreviewRowsByTable;
   isGenerating: boolean;
+  validation?: LoopValidation;
 }
 
 function displayValue(value: unknown): string {
@@ -13,13 +15,14 @@ function displayValue(value: unknown): string {
   return String(value);
 }
 
-export function TablePreviewView({ schema, rowsByTable, isGenerating }: TablePreviewViewProps) {
+export function TablePreviewView({ schema, rowsByTable, isGenerating, validation }: TablePreviewViewProps) {
   return (
     <div className="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
         {schema.tables.map((table) => {
           const rows = rowsByTable[table.name] ?? [];
           const previewRows = rows.slice(0, 5);
+          const tableErrors = validation?.errors.filter((error) => error.path === `data.${table.name}` || error.path.startsWith(`data.${table.name}.`)) ?? [];
 
           return (
             <article
@@ -41,9 +44,14 @@ export function TablePreviewView({ schema, rowsByTable, isGenerating }: TablePre
                     </p>
                   </div>
                 </div>
-                <span className="rounded-md border border-border-subtle bg-bg-tertiary px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  Showing {Math.min(5, rows.length)} of {rows.length.toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${tableErrors.length > 0 ? 'border-error/25 bg-error/5 text-error' : validation?.ok ? 'border-emerald-500/25 bg-emerald-500/5 text-emerald-300' : 'border-border-subtle bg-bg-tertiary text-text-muted'}`}>
+                    {tableErrors.length > 0 ? `${tableErrors.length} failed` : validation?.ok ? 'Validated' : 'Pending'}
+                  </span>
+                  <span className="rounded-md border border-border-subtle bg-bg-tertiary px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                    Showing {Math.min(5, rows.length)} of {rows.length.toLocaleString()}
+                  </span>
+                </div>
               </header>
 
               <div className="border-b border-border-subtle/70 bg-bg-primary/35 px-4 py-2.5">

@@ -1,12 +1,11 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
 import { SchemaEditor } from '@/components/editor/SchemaEditor';
 import { ColumnList } from '@/components/builder/ColumnList';
 import { PreviewWorkspace } from '@/components/preview/PreviewWorkspace';
-import { buildConfiguredPreviewSchema, buildParsedPreviewSchema, buildSingleTablePreviewSchema } from '@/components/preview/buildPreviewSchema';
-import type { PreviewSchemaModel } from '@/components/preview/types';
+import { buildJobPreviewSchema } from '@/components/preview/buildJobPreviewSchema';
 import { ExportPanel } from '@/components/export/ExportPanel';
 import { ToastContainer } from '@/components/shared/Toast';
 import { LandingPage } from '@/components/seo/LandingPage';
@@ -14,7 +13,7 @@ import { useSchemaStore } from '@/store/schemaStore';
 import { useChaosStore } from '@/store/chaosStore';
 import { useAppStore } from '@/store/appStore';
 import { useMultiTableStore } from '@/store/multiTableStore';
-import { useWorkerPool, type MultiTableGenDef } from '@/hooks/useWorkerPool';
+import { useGenerationLoop, type MultiTableGenDef } from '@/hooks/useGenerationLoop';
 import { sortTablesTopologically, type DependencyEdge } from '@/lib/topologicalSort';
 import { decodeSchemaFromUrl, encodeSchemaToUrl, clearSchemaFromUrl } from '@/lib/shareableUrl';
 import { usePageSeo } from '@/hooks/usePageSeo';
@@ -133,22 +132,26 @@ function App() {
   const {
     generate,
     generateMultiTable,
-    rows,
-    multiTableRows,
     activeViewTable,
     setActiveViewTable,
     isGenerating,
     progress,
     error,
-  } = useWorkerPool();
+    loopRun,
+    canExport,
+    cancel,
+  } = useGenerationLoop();
   const [rowCount, setRowCount] = useState(1000);
   const fieldsRef = useRef<FieldRow[]>([]);
-  const fieldDefsByTableRef = useRef<Record<string, FieldDef[]>>({});
-  const [previewSchema, setPreviewSchema] = useState<PreviewSchemaModel>({ tables: [], relationships: [] });
-  const [previewDataMode, setPreviewDataMode] = useState<'single' | 'multi'>('single');
   const [urlFields, setUrlFields] = useState<FieldRow[] | undefined>(undefined);
   const [hasManualFields, setHasManualFields] = useState(false);
-  const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>('build');
+  const [activeGeneratorSource, setActiveGeneratorSource] = useState<'build' | 'paste' | 'multi-table' | 'template'>(() =>
+    parsedSchema && parsedSchema.format !== 'manual'
+      ? 'paste'
+      : multiTable.tables.length > 0
+        ? 'multi-table'
+        : 'build',
+  );
 
   // Hydrate schema from URL on initial load
   useEffect(() => {
@@ -161,19 +164,26 @@ function App() {
   }, []);
 
   const hasSchema = (parsedSchema && parsedSchema.tables.length > 0) || multiTable.tables.length > 0 || hasManualFields;
+  const previewSchema = useMemo(
+    () => loopRun ? buildJobPreviewSchema(loopRun.job) : { tables: [], relationships: [] },
+    [loopRun?.job],
+  );
   const tableNames = previewSchema.tables.map((table) => table.name);
   const tableName = activeViewTable && tableNames.includes(activeViewTable)
     ? activeViewTable
     : tableNames[0] || 'data';
-  const previewRowsByTable = Object.fromEntries(
-    previewSchema.tables.map((table) => [
-      table.name,
-      previewDataMode === 'multi' ? multiTableRows[table.name] || [] : rows,
-    ]),
-  );
+  const previewRowsByTable = loopRun?.dataset ?? {};
   const viewRows = previewRowsByTable[tableName] || [];
-  const activeFieldDefs = fieldDefsByTableRef.current[tableName] || [];
-  const activeConfiguredRowCount = previewSchema.tables.find((table) => table.name === tableName)?.configuredRowCount || rowCount;
+  const activeJobTable = loopRun?.job.tables.find((table) => table.name === tableName);
+  const activeFieldDefs: FieldDef[] = activeJobTable?.fields.map((field) => ({
+    name: field.name,
+    typeId: field.type,
+    options: field.options ?? {},
+    unique: Boolean(field.unique),
+    primaryKey: Boolean(field.primaryKey),
+    foreignKeyRef: field.foreignKey ? `${field.foreignKey.table}.${field.foreignKey.field}` : undefined,
+  })) ?? [];
+  const activeConfiguredRowCount = activeJobTable?.rows || rowCount;
   const isMultiTable = previewSchema.tables.length > 1;
 
   const handleFieldsChange = useCallback((fields: FieldRow[]) => {
@@ -211,7 +221,7 @@ function App() {
         return {
           tableName: table.name,
           fields: table.fields
-            .filter((field) => field.name.trim())
+            .filter((field) => field.name.trim() && field.enabled !== false)
             .map((field) => ({
               name: field.name,
               typeId: field.typeId,
@@ -230,11 +240,6 @@ function App() {
             }),
         };
       });
-
-      const configuredPreview = buildConfiguredPreviewSchema(multiTable.tables, multiTable.foreignKeys);
-      setPreviewSchema(configuredPreview);
-      setPreviewDataMode('multi');
-      fieldDefsByTableRef.current = Object.fromEntries(tableDefs.map((table) => [table.tableName, table.fields]));
       clearSchemaFromUrl();
       generateMultiTable(tableDefs, generationOptions);
       setStep('preview');
@@ -242,8 +247,6 @@ function App() {
     }
 
     if (activeGeneratorSource === 'paste' && parsedSchema && parsedSchema.tables.length > 0) {
-      const parsedPreview = buildParsedPreviewSchema(parsedSchema, rowCount);
-      setPreviewSchema(parsedPreview);
 
       if (parsedSchema.tables.length > 1) {
         const dependencies: DependencyEdge[] = parsedSchema.tables.flatMap((table) =>
@@ -253,9 +256,9 @@ function App() {
           const table = parsedSchema.tables.find((candidate) => candidate.name === name)!;
           return {
             tableName: name,
-            fields: table.columns.map((column) => ({
+            fields: table.columns.filter((column) => column.enabled !== false).map((column) => ({
               name: column.name,
-              typeId: column.type,
+              typeId: column.fakerMethod || column.type,
               options: column.options || {},
               unique: column.isUnique,
               primaryKey: column.isPrimaryKey,
@@ -268,9 +271,6 @@ function App() {
             })),
           };
         });
-
-        setPreviewDataMode('multi');
-        fieldDefsByTableRef.current = Object.fromEntries(tableDefs.map((table) => [table.tableName, table.fields]));
         clearSchemaFromUrl();
         generateMultiTable(tableDefs, generationOptions);
         setStep('preview');
@@ -278,22 +278,20 @@ function App() {
       }
 
       const table = parsedSchema.tables[0];
-      const fieldDefs: FieldDef[] = table.columns.map((column) => ({
+      const fieldDefs: FieldDef[] = table.columns.filter((column) => column.enabled !== false).map((column) => ({
         name: column.name,
-        typeId: column.type,
+        typeId: column.fakerMethod || column.type,
         options: column.options || {},
         unique: column.isUnique,
         primaryKey: column.isPrimaryKey,
       }));
-      setPreviewDataMode('single');
-      fieldDefsByTableRef.current = { [table.name]: fieldDefs };
-      generate(fieldDefs, rowCount, generationOptions);
+      generate(fieldDefs, rowCount, { ...generationOptions, tableName: table.name });
       setStep('preview');
       return;
     }
 
     const fieldDefs: FieldDef[] = fieldsRef.current
-      .filter((field) => field.name.trim())
+      .filter((field) => field.name.trim() && field.enabled !== false)
       .map((field) => ({
         name: field.name,
         typeId: field.typeId,
@@ -304,9 +302,6 @@ function App() {
     if (fieldDefs.length === 0) return;
 
     const previewName = 'data';
-    setPreviewSchema(buildSingleTablePreviewSchema(previewName, fieldDefs, rowCount));
-    setPreviewDataMode('single');
-    fieldDefsByTableRef.current = { [previewName]: fieldDefs };
 
     const historyFields: FieldRow[] = fieldDefs.map((field, index) => ({
       id: 'hist-' + String(index),
@@ -317,7 +312,7 @@ function App() {
     }));
     encodeSchemaToUrl(historyFields);
 
-    generate(fieldDefs, rowCount, generationOptions);
+    generate(fieldDefs, rowCount, { ...generationOptions, tableName: previewName });
     setStep('preview');
   }, [
     activeGeneratorSource,
@@ -376,6 +371,7 @@ function App() {
                   initialFields={fieldsRef.current.length > 0 ? fieldsRef.current : urlFields} 
                   onGenerate={handleProceedToConfigure}
                   hasSchema={hasSchema}
+                  initialMode={activeGeneratorSource}
                 />
               </div>
 
@@ -534,7 +530,12 @@ function App() {
 
               {/* Column summary from parsed schema (paste mode) */}
               <div className="mt-8">
-                <ColumnList />
+                <ColumnList
+                  source={activeGeneratorSource}
+                  onSchemaFieldsChange={activeGeneratorSource === 'paste' || activeGeneratorSource === 'multi-table'
+                    ? undefined
+                    : handleFieldsChange}
+                />
               </div>
 
               {/* Row count + Chaos side by side */}
@@ -647,7 +648,7 @@ function App() {
                 </div>
               )}
 
-              <ExportPanel rows={viewRows} tableName={tableName} fieldDefs={activeFieldDefs} totalRowCount={activeConfiguredRowCount} />
+              <ExportPanel rows={viewRows} tableName={tableName} fieldDefs={activeFieldDefs} totalRowCount={activeConfiguredRowCount} canExport={canExport} validationErrors={loopRun?.errors} />
 
               <button
                 onClick={() => setStep('configure')}
@@ -663,6 +664,8 @@ function App() {
               isGenerating={isGenerating}
               progress={progress}
               error={error}
+              loopRun={loopRun}
+              onCancel={cancel}
             />
           </div>
         )}

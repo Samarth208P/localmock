@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SQL_DIALECTS } from '@/lib/constants';
 import { serializeCSV, serializeJSON, serializeJSONL, serializeSQL, serializeMSW, serializeTSArray, serializeTSV, serializeCassandraCQL, serializeFirebase, serializeInfluxDB, serializeXML, serializeDBUnitXML, serializeExcelXML, serializeCustom } from '@localmock/core/exports';
+import { verifyExportArtifact, type LoopDiagnostic } from '@localmock/core/loops';
 import { supportsFileSystemAccess } from '@/lib/browserDetect';
 import { showToast } from '@/components/shared/Toast';
 import { useStreamingExport } from '@/hooks/useStreamingExport';
@@ -13,8 +14,23 @@ interface ExportPanelProps {
   tableName: string;
   fieldDefs?: FieldDef[];
   totalRowCount?: number;
+  canExport: boolean;
+  validationErrors?: LoopDiagnostic[];
 }
 
+interface SaveFileHandle {
+  createWritable: () => Promise<{
+    write: (content: string) => Promise<void>;
+    close: () => Promise<void>;
+  }>;
+}
+
+interface FilePickerWindow {
+  showSaveFilePicker: (options: {
+    suggestedName: string;
+    types: Array<{ description: string; accept: Record<string, string[]> }>;
+  }) => Promise<SaveFileHandle>;
+}
 const FORMATS = [
   { id: 'csv', label: 'CSV', Icon: IconFile, desc: 'Comma-separated values' },
   { id: 'json', label: 'JSON', Icon: IconBraces, desc: 'Array of objects' },
@@ -32,18 +48,20 @@ const FORMATS = [
   { id: 'ts', label: 'TS Array', Icon: IconPackage, desc: 'TypeScript constant' },
 ] as const;
 
-export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: ExportPanelProps) {
-  const [sqlDialect, setSqlDialect] = useState<string>('postgres');
+export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount, canExport, validationErrors = [] }: ExportPanelProps) {
+  const [sqlDialect, setSqlDialect] = useState<(typeof SQL_DIALECTS)[number]>('postgres');
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null);
+  const [allowInvalidExport, setAllowInvalidExport] = useState(false);
   const hasFSAA = supportsFileSystemAccess();
   const { startStreaming, isStreaming, progress: streamProgress, error: streamError, isAvailable: streamAvailable } = useStreamingExport();
 
   const rowCount = totalRowCount || rows.length;
+  const exportAllowed = canExport || allowInvalidExport;
   const canStream = streamAvailable && rowCount > 50000 && fieldDefs && fieldDefs.length > 0;
 
   const doDownload = async (formatId: string) => {
-    if (rows.length === 0) return;
+    if (rows.length === 0 || !exportAllowed) return;
     setIsExporting(formatId);
 
     try {
@@ -73,7 +91,7 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
           mimeType = 'text/tab-separated-values';
           break;
         case 'sql':
-          content = serializeSQL(rows, tableName, sqlDialect as 'postgres' | 'mysql' | 'sqlite');
+          content = serializeSQL(rows, tableName, sqlDialect);
           filename = `localmock.sql`;
           mimeType = 'text/sql';
           break;
@@ -129,9 +147,17 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
           mimeType = 'application/json';
       }
 
+      const verificationFormat = formatId === 'ts' ? 'typescript' : formatId;
+      const verification = verifyExportArtifact({
+        content,
+        format: verificationFormat as Parameters<typeof verifyExportArtifact>[0]['format'],
+        expectedRows: rows.length,
+      });
+      if (!verification.ok) throw new Error(verification.errors[0]?.message ?? 'Export verification failed.');
+
       if (hasFSAA && rows.length > 10000) {
         try {
-          const handle = await (window as any).showSaveFilePicker({
+          const handle = await (window as unknown as FilePickerWindow).showSaveFilePicker({
             suggestedName: filename,
             types: [{ description: 'Export file', accept: { [mimeType]: [`.${filename.split('.').pop()}`] } }],
           });
@@ -141,8 +167,8 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
           setIsExporting(null);
           setExpandedFormat(null);
           return;
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
+        } catch (err: unknown) {
+          if (err instanceof DOMException && err.name === 'AbortError') {
             setIsExporting(null);
             return;
           }
@@ -159,7 +185,9 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Export failed.';
       console.error('Export failed:', err);
+      showToast(message, 'error');
     }
 
     setIsExporting(null);
@@ -167,9 +195,11 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
   };
 
   const doCopy = async () => {
-    if (rows.length === 0) return;
+    if (rows.length === 0 || !exportAllowed) return;
     try {
       const content = serializeJSON(rows);
+      const verification = verifyExportArtifact({ content, format: 'json', expectedRows: rows.length });
+      if (!verification.ok) throw new Error(verification.errors[0]?.message ?? 'Copy verification failed.');
       await navigator.clipboard.writeText(content);
       showToast('Copied to clipboard');
     } catch {
@@ -199,6 +229,22 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
         </button>
       )}
 
+      {!canExport && (
+        <div className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 text-[11px] text-amber-300">
+          <p className="font-semibold">Export blocked until validation passes</p>
+          <p className="mt-1 opacity-80">{validationErrors[0]?.message ?? 'The canonical dataset is not ready.'}</p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-[10px] text-text-secondary">
+            <input
+              type="checkbox"
+              checked={allowInvalidExport}
+              onChange={(event) => setAllowInvalidExport(event.target.checked)}
+              className="mt-0.5 accent-accent"
+            />
+            I understand the validation failures and explicitly want to export this dataset.
+          </label>
+        </div>
+      )}
+
       {/* Streaming export for large datasets */}
       {canStream && (
         <div className="space-y-2">
@@ -219,8 +265,8 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
               {(['csv', 'json', 'jsonl', 'sql'] as const).map((fmt) => (
                 <button
                   key={fmt}
-                  onClick={() => startStreaming(fieldDefs!, rowCount, fmt, tableName, sqlDialect as any)}
-                  disabled={isStreaming}
+                  onClick={() => startStreaming(fieldDefs!, rowCount, fmt, tableName, sqlDialect)}
+                  disabled={isStreaming || !exportAllowed}
                   className="flex-1 rounded-lg border border-border-subtle bg-bg-secondary py-2 text-[11px] font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-all disabled:opacity-50"
                 >
                   .{fmt}
@@ -252,7 +298,7 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
               {/* Card header — clickable to expand */}
               <button
                 onClick={() => setExpandedFormat(isExpanded ? null : f.id)}
-                disabled={isExporting !== null}
+                disabled={isExporting !== null || !exportAllowed}
                 className="w-full flex items-center gap-3 p-3.5 text-left transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
               >
                 <span className="text-text-muted flex-shrink-0 w-6 flex items-center justify-center">
@@ -297,7 +343,7 @@ export function ExportPanel({ rows, tableName, fieldDefs, totalRowCount }: Expor
                   <div className="flex gap-2">
                     <button
                       onClick={() => doDownload(f.id)}
-                      disabled={isExporting !== null}
+                      disabled={isExporting !== null || !exportAllowed}
                       className="flex-1 rounded-lg bg-accent py-2 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-hover active:scale-[0.98] disabled:opacity-60"
                     >
                       {isExporting === f.id ? 'Downloading...' : `Download .${f.id === 'msw' ? 'ts' : f.id === 'ts' ? 'ts' : f.id}`}

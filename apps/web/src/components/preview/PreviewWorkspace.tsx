@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { PreviewCanvas } from './PreviewCanvas';
 import { TablePreviewView } from './TablePreviewView';
+import { LoopRunStatus } from './LoopRunStatus';
+import type { GenerationLoopRun } from '@/hooks/useGenerationLoop';
 import type { PreviewRowsByTable, PreviewSchemaModel } from './types';
 
 interface PreviewWorkspaceProps {
@@ -9,9 +11,11 @@ interface PreviewWorkspaceProps {
   isGenerating: boolean;
   progress: number;
   error: string | null;
+  loopRun: GenerationLoopRun | null;
+  onCancel: () => void;
 }
 
-export function PreviewWorkspace({ schema, rowsByTable, isGenerating, progress, error }: PreviewWorkspaceProps) {
+export function PreviewWorkspace({ schema, rowsByTable, isGenerating, progress, error, loopRun, onCancel }: PreviewWorkspaceProps) {
   const [view, setView] = useState<'table' | 'map'>('table');
 
   return (
@@ -45,6 +49,8 @@ export function PreviewWorkspace({ schema, rowsByTable, isGenerating, progress, 
         </div>
       </header>
 
+      <LoopRunStatus run={loopRun} isGenerating={isGenerating} onCancel={onCancel} />
+
       {isGenerating && (
         <div className="h-1 w-full bg-bg-tertiary" aria-label={`Generating ${progress}%`}>
           <div className="h-full bg-accent transition-[width] duration-300" style={{ width: `${progress}%` }} />
@@ -59,7 +65,7 @@ export function PreviewWorkspace({ schema, rowsByTable, isGenerating, progress, 
           </div>
         </div>
       ) : view === 'table' ? (
-        <TablePreviewView schema={schema} rowsByTable={rowsByTable} isGenerating={isGenerating} />
+        <TablePreviewView schema={schema} rowsByTable={rowsByTable} isGenerating={isGenerating} validation={loopRun?.validation} />
       ) : (
         <PreviewCanvas schema={schema} />
       )}

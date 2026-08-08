@@ -11,6 +11,7 @@ interface ColumnRowProps {
   onUpdateOption: (columnId: string, key: string, value: any) => void;
   onUpdateNullPercentage: (columnId: string, percentage: number) => void;
   onConfirm: (columnId: string) => void;
+  onToggleEnabled: (columnId: string) => void;
 }
 
 export function ColumnRow({
@@ -20,6 +21,7 @@ export function ColumnRow({
   onUpdateOption,
   onUpdateNullPercentage,
   onConfirm,
+  onToggleEnabled,
 }: ColumnRowProps) {
   const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -40,7 +42,7 @@ export function ColumnRow({
 
   return (
     <>
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 rounded-lg border border-border-subtle bg-bg-secondary px-4 py-2.5 transition-colors hover:border-border-active">
+      <div className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] items-center gap-3 rounded-lg border border-border-subtle bg-bg-secondary px-4 py-2.5 transition-all hover:border-border-active ${column.enabled === false ? 'opacity-55' : ''}`}>
         {/* Field name and badges */}
         <div className="flex items-center gap-2 overflow-hidden h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 focus-within:border-accent focus-within:bg-bg-tertiary transition-all duration-200">
           <input
@@ -116,6 +118,18 @@ export function ColumnRow({
         >
           {column.confidence === 'high' ? '✓' : column.confidence === 'medium' ? '~' : '?'}
         </span>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={column.enabled !== false}
+          aria-label={`${column.enabled === false ? 'Enable' : 'Disable'} ${column.name}`}
+          onClick={() => onToggleEnabled(column.id)}
+          className={`relative h-5 w-9 rounded-full transition-colors ${column.enabled === false ? 'bg-bg-tertiary ring-1 ring-border-subtle' : 'bg-accent'}`}
+          title={column.enabled === false ? 'Column disabled' : 'Column enabled'}
+        >
+          <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${column.enabled === false ? '' : 'translate-x-4'}`} />
+        </button>
 
         {/* Confirm button for low/medium confidence */}
         {column.confidence !== 'high' ? (

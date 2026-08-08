@@ -31,15 +31,17 @@ export interface FieldRow {
   isPrimaryKey?: boolean;
   hasForeignKey?: boolean;
   nullPercentage?: number;
+  enabled?: boolean;
 }
 
 interface FieldBuilderProps {
   onFieldsChange?: (fields: FieldRow[]) => void;
   onFkToggle?: (fieldId: string) => void;
   initialFields?: FieldRow[];
+  commitToSchema?: boolean;
 }
 
-export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields }: FieldBuilderProps) {
+export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields, commitToSchema = true }: FieldBuilderProps) {
   const { setParsedSchema } = useSchemaStore();
   const [fields, setFields] = useState<FieldRow[]>(initialFields && initialFields.length > 0 ? initialFields : [
     { id: crypto.randomUUID(), name: 'id', typeId: 'uuid', options: {}, unique: true },
@@ -51,13 +53,6 @@ export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields }: Fiel
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState('My Custom Template');
 
-  // Sync initial fields to parent on mount so "Next" button appears immediately
-  // if default fields are present.
-  useEffect(() => {
-    if (fields.length > 0) {
-      onFieldsChange?.(fields);
-    }
-  }, []);
 
   // Disable background scrolling when any modal is open
   useEffect(() => {
@@ -75,9 +70,9 @@ export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields }: Fiel
     setFields(newFields);
     onFieldsChange?.(newFields);
 
-    // Commit valid fields to schema store
+    // Commit valid fields to the canonical schema store.
     const validFields = newFields.filter((f) => f.name.trim());
-    if (validFields.length > 0) {
+    if (commitToSchema && validFields.length > 0) {
       setParsedSchema({
         raw: '',
         format: 'manual',
@@ -92,12 +87,20 @@ export function FieldBuilder({ onFieldsChange, onFkToggle, initialFields }: Fiel
             isUnique: f.unique,
             isPrimaryKey: f.isPrimaryKey,
             isSequential: f.typeId === 'autoIncrement',
+            options: f.options,
             nullPercentage: f.nullPercentage || 0,
+            enabled: f.enabled !== false,
           })),
         }],
       });
     }
-  }, [setParsedSchema, onFieldsChange]);
+  }, [commitToSchema, setParsedSchema, onFieldsChange]);
+
+  // Defaults and restored fields must enter the same schema state that Configure reads.
+  useEffect(() => {
+    if (fields.length > 0) updateAndCommit(fields);
+    // This is intentionally mount-only; subsequent edits call updateAndCommit directly.
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
