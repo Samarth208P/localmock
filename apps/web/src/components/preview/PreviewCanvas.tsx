@@ -1,211 +1,109 @@
-import { useMemo, useCallback, useState, useEffect } from 'react';
-import { 
-  ReactFlow, 
-  Background, 
-  Controls, 
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Background,
+  Controls,
+  type Edge,
   MiniMap,
-  useNodesState,
+  type Node,
+  type ReactFlowInstance,
+  ReactFlow,
   useEdgesState,
-  addEdge,
-  Connection,
-  Edge,
-  Node
+  useNodesState,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useMultiTableStore } from '@/store/multiTableStore';
-import { useSchemaStore } from '@/store/schemaStore';
 import { TableNode } from './TableNode';
+import type { PreviewSchemaModel } from './types';
 
-const nodeTypes = {
-  table: TableNode,
-};
+const nodeTypes = { table: TableNode };
 
-export function PreviewCanvas({ fieldDefs, tableName = 'data' }: { fieldDefs?: any[], tableName?: string }) {
-  const { tables, foreignKeys } = useMultiTableStore();
-  const { parsedSchema } = useSchemaStore();
-
+export function PreviewCanvas({ schema }: { schema: PreviewSchemaModel }) {
   const initialElements = useMemo(() => {
-    let nodes: Node[] = [];
-    let edges: Edge[] = [];
+    const nodes: Node[] = schema.tables.map((table, index) => ({
+      id: table.id,
+      type: 'table',
+      position: {
+        x: (index % 3) * 440 + 60,
+        y: Math.floor(index / 3) * 420 + 60,
+      },
+      data: {
+        name: table.name,
+        fields: table.columns.map((column) => ({
+          name: column.name,
+          typeId: column.typeId,
+          isPrimaryKey: column.isPrimaryKey,
+          isForeignKey: column.isForeignKey,
+        })),
+      },
+    }));
 
-    if (tables.length > 0) {
-      // Multi-table mode
-      nodes = tables.map((t, index) => {
-        // Reverse layout horizontally so dependents (sources) are on the left
-        const reverseIndex = tables.length - 1 - index;
-        const x = (reverseIndex % 3) * 800 + 50;
-        const y = Math.floor(reverseIndex / 3) * 600 + 50;
-
-        return {
-          id: t.id,
-          type: 'table',
-          position: { x, y },
-          data: {
-            name: t.name,
-            fields: t.fields.map(f => ({
-              name: f.name,
-              typeId: f.typeId,
-              options: f.options,
-              unique: f.unique,
-              isPrimaryKey: f.name === 'id',
-              isForeignKey: foreignKeys.some(fk => fk.fromTable === t.id && fk.fromField === f.name)
-            }))
-          }
-        };
-      });
-
-      edges = foreignKeys.map(fk => ({
-        id: fk.id,
-        source: fk.fromTable,
-        target: fk.toTable,
-        sourceHandle: fk.fromField,
-        targetHandle: fk.toField,
-        animated: true,
-        type: 'default',
-        style: { stroke: '#6366f1', strokeWidth: 2.5 },
-      }));
-
-    } else if (parsedSchema && parsedSchema.tables.length > 0) {
-      // Collect all fields that are targets of foreign keys (i.e., referenced PKs)
-      const referencedFields = new Set<string>(); // "tableName.fieldName"
-      for (const t of parsedSchema.tables) {
-        if (t.relations) {
-          for (const r of t.relations) {
-            referencedFields.add(`${r.toTable}.${r.toField}`);
-          }
-        }
-      }
-
-      // Collect all FK source fields
-      const fkSourceFields = new Set<string>(); // "tableName.fieldName"
-      for (const t of parsedSchema.tables) {
-        if (t.relations) {
-          for (const r of t.relations) {
-            fkSourceFields.add(`${t.name}.${r.fromField}`);
-          }
-        }
-      }
-
-      nodes = parsedSchema.tables.map((t, index) => {
-        const reverseIndex = parsedSchema.tables.length - 1 - index;
-        const x = (reverseIndex % 3) * 800 + 50;
-        const y = Math.floor(reverseIndex / 3) * 600 + 50;
-
-        return {
-          id: t.name,
-          type: 'table',
-          position: { x, y },
-          data: {
-            name: t.name,
-            fields: t.columns.map(col => ({
-              name: col.name,
-              typeId: col.type,
-              options: {},
-              unique: col.isUnique,
-              isPrimaryKey: referencedFields.has(`${t.name}.${col.name}`),
-              isForeignKey: fkSourceFields.has(`${t.name}.${col.name}`),
-            }))
-          }
-        };
-      });
-      
-      parsedSchema.tables.forEach((t) => {
-        if (t.relations) {
-          t.relations.forEach((r, rIdx) => {
-            edges.push({
-              id: `${t.name}-${r.fromField}-${r.toTable}-${rIdx}`,
-              source: t.name,
-              target: r.toTable,
-              sourceHandle: r.fromField,
-              targetHandle: r.toField,
-              animated: true,
-              type: 'default',
-              style: { stroke: '#6366f1', strokeWidth: 2.5 },
-            });
-          });
-        }
-      });
-    } else if (fieldDefs && fieldDefs.length > 0) {
-      nodes = [{
-        id: 'manual-table',
-        type: 'table',
-        position: { x: 50, y: 50 },
-        data: {
-          name: tableName,
-          fields: fieldDefs.map(f => ({
-            name: f.name,
-            typeId: f.typeId,
-            options: f.options,
-            unique: f.unique,
-            isPrimaryKey: f.name === 'id',
-            isForeignKey: false,
-          }))
-        }
-      }];
-    }
+    const edges: Edge[] = schema.relationships.map((relationship) => ({
+      id: relationship.id,
+      source: relationship.fromTable,
+      target: relationship.toTable,
+      sourceHandle: relationship.fromField,
+      targetHandle: relationship.toField,
+      animated: true,
+      type: 'default',
+      style: { stroke: '#6366f1', strokeWidth: 2.25 },
+    }));
 
     return { nodes, edges };
-  }, [tables, foreignKeys, parsedSchema, fieldDefs, tableName]);
+  }, [schema]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialElements.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialElements.edges);
+  const [instance, setInstance] = useState<ReactFlowInstance | null>(null);
 
   useEffect(() => {
     setNodes(initialElements.nodes);
     setEdges(initialElements.edges);
   }, [initialElements, setNodes, setEdges]);
 
-  // Allow manual connecting just for fun, though it won't persist to the store here
-  const onConnect = useCallback((params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, animated: true, type: 'default' }, eds)), [setEdges]);
-
-  const [rfInstance, setRfInstance] = useState<any>(null);
-
   useEffect(() => {
-    if (rfInstance && nodes.length > 0) {
-      setTimeout(() => rfInstance.fitView({ padding: 0.2, duration: 800, minZoom: 0.01 }), 50);
-    }
-  }, [rfInstance, parsedSchema, tables.length]);
+    if (!instance || nodes.length === 0) return;
+    const timer = window.setTimeout(() => {
+      void instance.fitView({ padding: 0.18, duration: 450, minZoom: 0.15 });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [instance, nodes.length]);
 
   return (
-    <div className="w-full h-full relative bg-bg-primary">
+    <div className="relative h-full w-full bg-bg-primary">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onInit={setRfInstance}
+        onInit={setInstance}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2, minZoom: 0.01 }}
+        fitViewOptions={{ padding: 0.18, minZoom: 0.15 }}
+        minZoom={0.1}
+        maxZoom={1.8}
+        panOnDrag
+        zoomOnScroll
+        zoomOnPinch
         className="react-flow-dark"
-        minZoom={0.01}
-        maxZoom={1.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#3f3f46" gap={16} size={1} />
-        <Controls 
-          className="bg-bg-tertiary border border-border-subtle shadow-xl rounded-xl overflow-hidden flex flex-col p-1 gap-1" 
+        <Background color="#3f3f46" gap={18} size={1} />
+        <Controls
+          className="overflow-hidden rounded-xl border border-border-subtle bg-bg-tertiary p-1 shadow-xl"
           showInteractive={false}
-          fitViewOptions={{ padding: 0.2, minZoom: 0.01 }}
+          fitViewOptions={{ padding: 0.18, minZoom: 0.15 }}
         />
-        <MiniMap 
-          nodeColor="#27272a" 
-          maskColor="rgba(0, 0, 0, 0.4)" 
-          className="!bg-bg-secondary !border-border-subtle rounded-xl overflow-hidden" 
+        <MiniMap
+          nodeColor="#27272a"
+          maskColor="rgba(0, 0, 0, 0.45)"
+          className="!rounded-xl !border-border-subtle !bg-bg-secondary"
+          pannable
+          zoomable
         />
       </ReactFlow>
-      
-      {nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-bg-tertiary">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-50">
-                <path d="M3 10h18M3 14h18M3 6h18M3 18h18" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-text-secondary">No tables to preview</p>
-          </div>
+
+      {schema.tables.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="text-sm text-text-muted">Preview schema is unavailable.</p>
         </div>
       )}
     </div>
